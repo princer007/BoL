@@ -43,6 +43,8 @@ local Ranges = {[_Q] = 790,       [_W] = 925,  [_E] = 700,       [_R] = 675}
 local Widths = {[_Q] = 125,       [_W] = 190,  [_E] = 45 * 0.5,  [_R] = 1,    [_QE] = 60}
 local Delays = {[_Q] = 0.6,       [_W] = 0.25, [_E] = 0.25,      [_R] = 0.25, [_QE] = 1800} ---_QE delay updates in function of _E delay + Speed and the distance to the ball
 local Speeds = {[_Q] = math.huge, [_W] = 1450, [_E] = 2500,      [_R] = 1,    [_QE] = 1600}
+local FocusJungleNames = {"GiantWolf8.1.1","AncientGolem7.1.1","Wraith9.1.1","LizardElder10.1.1","Golem11.1.2","GiantWolf2.1.1","AncientGolem1.1.1",
+"Wraith3.1.1","LizardElder4.1.1","Golem5.1.2","GreatWraith13.1.1","GreatWraith14.1.1"}
 
 local pets = {"annietibbers", "shacobox", "malzaharvoidling", "heimertyellow", "heimertblue", "yorickdecayedghoul"}
 
@@ -54,6 +56,9 @@ local QERange = (Ranges[_Q] + 500)
 local QECombo = 0
 local WECombo = 0
 local EQCombo = 0
+
+local gotWObject = false
+local killWithW = false
 
 local DontUseRTime = 0
 local UseRTime = 0
@@ -660,27 +665,45 @@ function JungleFarm()
 		if selectedTarget and selectedTarget.type == CloseMinion.type then
 			DrawJungleStealingIndicator = true
 			SOWi:DisableAttacks()
-			if ValidTarget(selectedTarget) and DLib:IsKillable(selectedTarget, {_Q, _W}) and GetDistanceSqr(myHero.visionPos, selectedTarget) <= W.rangeSqr and W:IsReady() then
+			if ValidTarget(selectedTarget) and DLib:IsKillable(selectedTarget, {_W}) and GetDistanceSqr(myHero.visionPos, selectedTarget) <= W.rangeSqr and W:IsReady() then
 				if W.status == 0 then
 					W:Cast(selectedTarget.x, selectedTarget.z)
+					killWithW = true
+					gotWObject = true
 				end
 			end
 		else
 			if UseW then
-				if W.status == 0 then
+				if W.status == 0 and not gotWObject and W:IsReady() then
 					local validball = GetWValidBall(true)
 					if validball and validball.added then
-						W:Cast(validball.object.x, validball.object.z)
-						WUsed = true
+						W:Cast(validball)
+						gotWObject = true
 					end
 				else
-					if WObject.name and WObject.name:find("Seed") then
-						local selectedTarget = GetTarget()					
-						W:Cast(selectedTarget.x, selectedTarget.z)
+					if gotWObject and not killWithW then
+						local ValidMinion = nil
+						----=== Valid minion calculation
+						for i, minion in ipairs(JungleMinions.objects) do
+							for j=1, 12 do
+								--FocusJungleNames
+								if minion.name == FocusJungleNames[j] then 
+									ValidMinion = minion
+								end
+							end
+						end
+						if not ValidMinion then 
+							ValidMinion = CloseMinion 
+						end
+						----=== Finished
+						W:Cast(ValidMinion.x, ValidMinion.z)
+						W:Cast(myHero.x, myHero.z)
 						WUsed = true
+						gotWObject = false
 					else
 						W:Cast(myHero.x, myHero.z)
 						WUsed = true
+						gotWObject = false
 					end
 				end
 			end
@@ -722,7 +745,7 @@ end
 
 function Combo()
 	SOWi:DisableAttacks()
-	if not Q:IsReady() and not W:IsReady() and not E:IsReady() then
+	if not Q:IsReady() and (not W:IsReady() or not E:IsReady()) then
 		SOWi:EnableAttacks()
 	end
 	UseSpells(Menu.Combo.UseQ, Menu.Combo.UseW, Menu.Combo.UseE, Menu.Combo.UseEQ, Menu.Combo.UseR)
