@@ -650,7 +650,6 @@ function JungleFarm()
 	local UseQ = Menu.JungleFarm.UseQ
 	local UseW = Menu.JungleFarm.UseW
 	local UseE = Menu.JungleFarm.UseE
-	local WUsed = false
 	local CloseMinions = SelectUnits(JungleMinions.objects, function(t) return GetDistanceSqr(t) <= W.rangeSqr and ValidTarget(t) end)
 	local AllMinions = SelectUnits(JungleMinions.objects, function(t) return ValidTarget(t) end)
 
@@ -698,11 +697,6 @@ function JungleFarm()
 						----=== Finished
 						W:Cast(ValidMinion.x, ValidMinion.z)
 						W:Cast(myHero.x, myHero.z)
-						WUsed = true
-						gotWObject = false
-					else
-						W:Cast(myHero.x, myHero.z)
-						WUsed = true
 						gotWObject = false
 					end
 				end
@@ -724,10 +718,8 @@ function JungleFarm()
 		end
 	end
 
-	if W.status == 1 and not WUsed then
-		if (not WObject.name or not WObject.name:find("Seed")) and WObject.type == 'obj_AI_Minion' then
+	if killWithW and gotWObject then
 			W:Cast(myHero.x, myHero.z)
-		end
 	end
 end
 
