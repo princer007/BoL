@@ -1,7 +1,7 @@
 if myHero.charName ~= "Syndra" then return end
 
-local version = 1.07
-local AUTOUPDATE = false
+local version = 1.08
+local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -21,12 +21,12 @@ end
 if DOWNLOADING_SOURCELIB then PrintChat("Downloading required libraries, please wait...") return end
 
 if AUTOUPDATE then
-	 SourceUpdater(SCRIPT_NAME, version, "raw.github.com", "/honda7/BoL/master/"..SCRIPT_NAME..".lua", SCRIPT_PATH .. GetCurrentEnv().FILE_NAME, "/honda7/BoL/master/VersionFiles/"..SCRIPT_NAME..".version"):CheckUpdate()
+	 SourceUpdater(SCRIPT_NAME, version, "raw.githubusercontent.com", "/princer007/BoL/master/"..SCRIPT_NAME..".lua", SCRIPT_PATH .. GetCurrentEnv().FILE_NAME, "/princer007/BoL/master/"..SCRIPT_NAME..".version"):CheckUpdate()
 end
 
 local RequireI = Require("SourceLib")
-RequireI:Add("vPrediction", "https://raw.githubusercontent.com/LegendBot/Scripts/master/Common/VPrediction.lua")
-RequireI:Add("SOW", "https://raw.githubusercontent.com/LegendBot/Scripts/master/Common/SOW.lua")
+RequireI:Add("vPrediction", "https://raw.githubusercontent.com/Hellsing/BoL/master/common/VPrediction.lua")
+RequireI:Add("SOW", "https://raw.githubusercontent.com/Hellsing/BoL/master/common/SOW.lua")
 RequireI:Check()
 
 if RequireI.downloadNeeded == true then return end
@@ -57,8 +57,8 @@ local QECombo = 0
 local WECombo = 0
 local EQCombo = 0
 
-local gotWObject = false
-local killWithW = false
+local gotWObject
+local killWithW
 
 local DontUseRTime = 0
 local UseRTime = 0
@@ -173,8 +173,11 @@ function OnLoad()
 			DManager:CreateCircle(myHero, range, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, SpellToString(spell).." Range", true, true, true)
 		end
 		DManager:CreateCircle(myHero, QERange, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, "Q+E Range", true, true, true)
-		
-		
+	Menu:addSubMenu("Debug", "Debug")
+		Menu.Debug:addParam("DebugMode",  "Debug mode", SCRIPT_PARAM_LIST, 1, {"Disabled" , "Enabled"})
+		Menu.Debug:addParam("DebugBall",  "On create balls", SCRIPT_PARAM_LIST, 1, {"Disabled" , "Enabled"})
+		killWithW = false
+		gotWObject = false
 	--[[Predicted damage on healthbars]]
 	DLib:AddToMenu(Menu.Drawings, MainCombo)
 
@@ -203,7 +206,7 @@ end
 function GetValidBalls(all)
 	local result = {}
 	for i, ball in ipairs(Balls) do
-		if (ball.added or ball.startT <= os.clock()) and Balls[i].endT >= os.clock() and ball.object.valid then
+		if (ball['added'] or ball['startT'] <= os.clock()) and Balls[i]['endT'] >= os.clock() and ball['object']['valid'] then
 			if not WObject or ball.object.networkID ~= WObject.networkID then
 				table.insert(result, ball)
 			end
@@ -264,7 +267,7 @@ end
 function BTOnDraw()--For testings
 	local activeballs = GetValidBalls()
 	for i, ball in ipairs(activeballs) do
-		DrawCircle(ball.object.x, myHero.y, ball.object.z, 100, ARGB(255,255,255,255))
+		DrawCircle(ball['object']['x'], myHero.y, ball['object']['z'], 100, ARGB(255,255,255,255))
 	end
 end
 
@@ -400,7 +403,6 @@ function OnCastQ(spell)
 					 }
 
 	table.insert(Balls, BallInfo)
-
 	if os.clock() - QECombo < 1.5 then
 		CastSpell(_E, spell.endPos.x, spell.endPos.z)
 		QECombo = 0
@@ -656,8 +658,6 @@ function JungleFarm()
 	local CloseMinion = CloseMinions[1]
 	local FarMinion = AllMinions[1]
 
-	
-
 	if ValidTarget(CloseMinion) then
 		local selectedTarget = GetTarget()
 
@@ -672,38 +672,37 @@ function JungleFarm()
 				end
 			end
 		else
+			if UseQ and Q:IsReady() then
+				Q:Cast(CloseMinion)
+			end
 			if UseW then
-				if W.status == 0 and not gotWObject and W:IsReady() then
-					local validball = GetWValidBall(true)
-					if validball and validball.added then
-						W:Cast(validball)
-						gotWObject = true
-					end
-				else
-					if gotWObject and not killWithW then
-						local ValidMinion = nil
-						----=== Valid minion calculation
-						for i, minion in ipairs(JungleMinions.objects) do
-							for j=1, 12 do
-								--FocusJungleNames
-								if minion.name == FocusJungleNames[j] then 
-									ValidMinion = minion
-								end
+				local targetBall = nil
+				local activeballs = GetValidBalls()
+				for i, ball in ipairs(activeballs) do
+					targetBall = ball
+				end
+				if UseQ and os.clock()-Q:GetLastCastTime() > 1.2 and os.clock()-Q:GetLastCastTime() < 1.5  and not gotWObject and W:IsReady() and targetBall ~= nil then
+					gotWObject = true
+					W:Cast(targetBall.object.x, targetBall.object.z)
+				end
+				if W2:IsReady() and gotWObject then
+					local ValidMinion = nil
+					----=== Valid minion
+					for i, minion in ipairs(JungleMinions.objects) do
+						for j=1, 12 do
+							if minion.name == FocusJungleNames[j] then 
+								ValidMinion = minion
 							end
 						end
-						if not ValidMinion then 
-							ValidMinion = CloseMinion 
-						end
-						----=== Finished
-						W:Cast(ValidMinion.x, ValidMinion.z)
-						W:Cast(myHero.x, myHero.z)
-						gotWObject = false
 					end
+					if ValidMinion == nil then 
+						ValidMinion = CloseMinion 
+					end
+					----=== Finished
+					W:Cast(ValidMinion.x, ValidMinion.z)
+					W:Cast(myHero.x, myHero.z)
+					gotWObject = false
 				end
-			end
-
-			if UseQ then
-				Q:Cast(CloseMinion)
 			end
 
 			if UseE and os.clock() - Q:GetLastCastTime() > 1 then
@@ -720,7 +719,10 @@ function JungleFarm()
 
 	if killWithW and gotWObject then
 			W:Cast(myHero.x, myHero.z)
+			killWithW = false
+			gotWObject = false
 	end
+	
 end
 
 function UpdateSpellData()
@@ -755,7 +757,7 @@ function OnTick()
 	DLib.combo = GetCombo()
 	UpdateSpellData()--update the spells data
 	DrawEQIndicators = false
-	
+
 	if Menu.Combo.Enabled then
 		Combo()
 	elseif Menu.Harass.Enabled or Menu.Harass.Enabled2 then
@@ -823,9 +825,21 @@ function GetDistanceToClosestHero(p)
 	return result
 end
 
+function sleep(n)  -- seconds
+  local t0 = os.clock()
+  while os.clock() - t0 <= n do end
+end
+
 myHero.barData = {PercentageOffset = {x = 0, y = 0}}
 
 function OnDraw()
+	if Menu.Debug.DebugMode == 2 then
+		-------------------------------------
+		if Menu.Debug.DebugBall == 2 then
+			BTOnDraw()
+		end
+		-------------------------------------
+	end
 	if DrawEQIndicators then
 		DrawCircle3D(mousePos.x, mousePos.y, mousePos.z, 200, 3, GetDistanceToClosestHero(mousePos) < 200 * 200 and ARGB(200, 255, 0, 0) or ARGB(200, 0, 255, 0), 20)--sorry for colorblind people D:
 	end
