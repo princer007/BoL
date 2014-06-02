@@ -1,7 +1,7 @@
 if myHero.charName ~= "Syndra" then return end
 
 local version = 1.08
-local AUTOUPDATE = true
+local AUTOUPDATE = false
 local SCRIPT_NAME = "Syndra"
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -57,8 +57,8 @@ local QECombo = 0
 local WECombo = 0
 local EQCombo = 0
 
-local gotWObject
-local killWithW
+local gotWObject = false
+local killWithW = false
 
 local DontUseRTime = 0
 local UseRTime = 0
@@ -176,8 +176,6 @@ function OnLoad()
 	Menu:addSubMenu("Debug", "Debug")
 		Menu.Debug:addParam("DebugMode",  "Debug mode", SCRIPT_PARAM_LIST, 1, {"Disabled" , "Enabled"})
 		Menu.Debug:addParam("DebugBall",  "On create balls", SCRIPT_PARAM_LIST, 1, {"Disabled" , "Enabled"})
-		killWithW = false
-		gotWObject = false
 	--[[Predicted damage on healthbars]]
 	DLib:AddToMenu(Menu.Drawings, MainCombo)
 
@@ -681,11 +679,11 @@ function JungleFarm()
 				for i, ball in ipairs(activeballs) do
 					targetBall = ball
 				end
-				if UseQ and os.clock()-Q:GetLastCastTime() > 1.2 and os.clock()-Q:GetLastCastTime() < 1.5  and not gotWObject and W:IsReady() and targetBall ~= nil then
-					gotWObject = true
+				if UseQ and os.clock()-Q:GetLastCastTime() > 1 and os.clock()-Q:GetLastCastTime() < 6 and not gotWObject and targetBall ~= nil then
 					W:Cast(targetBall.object.x, targetBall.object.z)
-				end
-				if W2:IsReady() and gotWObject then
+					gotWObject = true
+				else
+					if gotWObject == true then
 					local ValidMinion = nil
 					----=== Valid minion
 					for i, minion in ipairs(JungleMinions.objects) do
@@ -700,9 +698,11 @@ function JungleFarm()
 					end
 					----=== Finished
 					W:Cast(ValidMinion.x, ValidMinion.z)
-					W:Cast(myHero.x, myHero.z)
+					--W:Cast(myHero.x, myHero.z)
 					gotWObject = false
 				end
+				end
+				
 			end
 
 			if UseE and os.clock() - Q:GetLastCastTime() > 1 then
@@ -823,11 +823,6 @@ function GetDistanceToClosestHero(p)
 		end
 	end
 	return result
-end
-
-function sleep(n)  -- seconds
-  local t0 = os.clock()
-  while os.clock() - t0 <= n do end
 end
 
 myHero.barData = {PercentageOffset = {x = 0, y = 0}}
