@@ -371,27 +371,6 @@ function OnGapclose(unit, data)
 	end
 end
 
-function OnRecvPacket(p)
-	if p.header == 112 then
-		p.pos = 1
-		local NetworkID = p:DecodeF()
-		local Active = p:Decode1()
-
-		if NetworkID and Active == 1 then
-			if not WObject then
-				for i, ball in ipairs(Balls) do
-					if ball.networkID == NetworkID then
-						Balls[i].endT = os.clock() + BallDuration - GetLatency()/2000
-					end
-				end
-			end
-			WObject = objManager:GetObjectByNetworkId(NetworkID)
-		else
-			WObject = nil
-		end
-	end
-end
-
 function OnCastQ(spell)
 	local BallInfo = {
 						added = false, 
