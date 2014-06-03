@@ -635,7 +635,12 @@ function JungleFarm()
 
 	local CloseMinion = CloseMinions[1]
 	local FarMinion = AllMinions[1]
-
+	
+	if killWithW and gotWObject then
+			W:Cast(myHero.x, myHero.z)
+			killWithW = false
+			gotWObject = false
+	end
 	if ValidTarget(CloseMinion) then
 		local selectedTarget = GetTarget()
 
@@ -695,14 +700,7 @@ function JungleFarm()
 			Q:Cast(QPos.x, QPos.z)
 			QECombo = os.clock()
 		end
-	end
-
-	if killWithW and gotWObject then
-			W:Cast(myHero.x, myHero.z)
-			killWithW = false
-			gotWObject = false
-	end
-	
+	end	
 end
 
 function UpdateSpellData()
