@@ -1,6 +1,6 @@
 if myHero.charName ~= "Syndra" then return end
 
-local version = 1.08
+local version = 1.09
 local AUTOUPDATE = false
 local SCRIPT_NAME = "Syndra"
 
@@ -145,7 +145,7 @@ function OnLoad()
 
 	Menu:addSubMenu("EQ combo settings", "EQ")
 		Menu.EQ:addParam("Order",  "Combo mode", SCRIPT_PARAM_LIST, 1, {"E -> Q" , "Q - > E"})
-		Menu.EQ:addParam("Range", "Place Q at range:", SCRIPT_PARAM_SLICE, Q.range, 0, Q.range)
+		Menu.EQ:addParam("Range", "Place Q at range:", SCRIPT_PARAM_SLICE, 700, 0, Q.range)
 
 	Menu:addSubMenu("Ultimate", "R")
 		Menu.R:addSubMenu("Don't use R on", "Targets")
@@ -397,17 +397,18 @@ function OnCastW(spell)
 end
 
 function OnCastE(spell)
+--[[
 	if os.clock() - EQCombo < 1.5 and EQTarget then
-		for i = 0, 0.5, 0.05 do--Kappa
-			DelayAction(function(t) Cast2Q(t) end, i, {EQTarget})
-		end
+		DelayAction(function(t) Cast2Q(EQTarget) end, 0.6, {EQTarget})
 	end
+]]
 end
 
 function StartEQCombo(unit, Qfirst)
 	if (Menu.EQ.Order == 1 or Qfirst == false) and Qfirst ~= true then
 		EQCombo = os.clock()
 		EQTarget = unit
+		Cast2Q(EQTarget)
 		E:Cast(unit.visionPos.x, unit.visionPos.z)
 	else 
 		QECombo = os.clock()
