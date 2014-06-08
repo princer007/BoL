@@ -1,6 +1,6 @@
 if myHero.charName ~= "Syndra" then return end
 
-local version = 1.09
+local version = 1.12
 local AUTOUPDATE = false
 local SCRIPT_NAME = "Syndra"
 
@@ -57,8 +57,7 @@ local QECombo = 0
 local WECombo = 0
 local EQCombo = 0
 
-local gotWObject = false
-local killWithW = false
+local WStatus = nil
 
 local DontUseRTime = 0
 local UseRTime = 0
@@ -126,6 +125,7 @@ function OnLoad()
 		Menu.Harass:addParam("UseEQ", "Use EQ", SCRIPT_PARAM_ONOFF, false)
 		Menu.Harass:addParam("ManaCheck", "Don't harass if mana < %", SCRIPT_PARAM_SLICE, 0, 0, 100)
 		Menu.Harass:addParam("Enabled", "Harass!", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("C"))
+		Menu.Harass:addParam("PP", "Perfect Poke(Harras when enemy do AA)", SCRIPT_PARAM_ONOFF, true)
 		Menu.Harass:addParam("Enabled2", "Harass (toggle)!", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("L"))
 
 	Menu:addSubMenu("Farm", "Farm")
@@ -174,8 +174,8 @@ function OnLoad()
 		end
 		DManager:CreateCircle(myHero, QERange, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, "Q+E Range", true, true, true)
 	Menu:addSubMenu("Debug", "Debug")
-		Menu.Debug:addParam("DebugMode",  "Debug mode", SCRIPT_PARAM_LIST, 1, {"Disabled" , "Enabled"})
-		Menu.Debug:addParam("DebugBall",  "On create balls", SCRIPT_PARAM_LIST, 1, {"Disabled" , "Enabled"})
+		Menu.Debug:addParam("DebugBall",  "Track balls", SCRIPT_PARAM_ONOFF, true)
+		Menu.Debug:addParam("DebugCast",  "Cast output", SCRIPT_PARAM_ONOFF, true)
 	--[[Predicted damage on healthbars]]
 	DLib:AddToMenu(Menu.Drawings, MainCombo)
 
@@ -282,6 +282,7 @@ function AutoGrabPets()
 		local pet = GetPet(true)
 		if pet then
 			W:Cast(pet.x, pet.z)
+			if Menu.Debug.DebugCast then PrintChat("Grab pet by W") end
 		end
 	end
 end
@@ -349,7 +350,17 @@ end
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+function OnProcessSpell(unit, spell)
+if (Menu.Harass.Enabled or Menu.Harass.Enabled2) and Menu.Harass.PP then
+		if unit.team ~= myHero.team then
+		    if unit.type == myHero.type and unit ~= nil then
+		    	if spell.name:lower():find("attack") then
+					Harass(target)
+		        end
+			end
+		end
+	end
+end
 function OnInterruptSpell(unit, spell)
 	if GetDistanceSqr(unit.visionPos, myHero.visionPos) < E.rangeSqr and E:IsReady() then
 		
@@ -357,6 +368,7 @@ function OnInterruptSpell(unit, spell)
 			StartEQCombo(unit, false)
 		else
 			E:Cast(unit.visionPos.x, unit.visionPos.z)
+			if Menu.Debug.DebugCast then PrintChat("Interrupt, E to cast pos") end
 		end
 
 	elseif GetDistanceSqr(unit.visionPos,  myHero.visionPos) < QERange * QERange and Q:IsReady() and E:IsReady() then
@@ -388,7 +400,7 @@ function OnCastQ(spell)
 	EQTarget = nil
 	EQCombo = 0
 end
-
+-- TODO:Prob not work cause of OnCastW not executing after WECombo
 function OnCastW(spell)
 	if os.clock() - WECombo < 1.5 then
 		CastSpell(_E, spell.endPos.x, spell.endPos.z)
@@ -410,6 +422,7 @@ function StartEQCombo(unit, Qfirst)
 		EQTarget = unit
 		Cast2Q(EQTarget)
 		E:Cast(unit.visionPos.x, unit.visionPos.z)
+		if Menu.Debug.DebugCast then PrintChat("Cast E to ball pos in direction of enemy (EQCombo)") end
 	else 
 		QECombo = os.clock()
 		Cast2Q(unit)
@@ -426,21 +439,29 @@ function Cast2Q(target)
 		local QEtargetPos, Hitchance, Position = EQ:GetPrediction(target)
 		local pos = Vector(myHero.visionPos) + Menu.EQ.Range * (Vector(QEtargetPos) - Vector(myHero.visionPos)):normalized()
 		Q:Cast(pos.x, pos.z)
+		if Menu.Debug.DebugCast then PrintChat("Cast Q to max alllowed distance in the direction of enemy (EQCombo)") end
 	else
 		if Qdistance then
 			local pos = Vector(myHero.visionPos) + Qdistance * (Vector(target) - Vector(myHero.visionPos)):normalized()
 			Q:Cast(pos.x, pos.z)
+			if Menu.Debug.DebugCast then PrintChat("Cast Q in direction of enemy (EQ Combo)") end
 		else
 			Q:Cast(target)
+			if Menu.Debug.DebugCast then PrintChat("Cast Q on enemy (EQ Combo)") end
 		end
 	end
 end
 
-function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
+function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	local Qtarget = STS:GetTarget(W.range)
 	local QEtarget = STS:GetTarget(QERange)
 	local Rtarget = STS:GetTarget(R.range)
 	local DFGUsed = false
+	if target then
+		Qtarget = target
+		Wtarget = target
+		QEtarget = target
+	end
 
 	if (os.clock() - DontUseRTime < 10) then
 		UseR = false
@@ -449,11 +470,13 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
 		if Qtarget and W.status == 1 and (os.clock() - Q:GetLastCastTime() > 0.25) and (os.clock() - E:GetLastCastTime() > 0.25) then
 			if WObject.charName == nil or WObject.charName:lower() ~= "heimertblue" then --Don't throw the giant tower :D
 				W:Cast(Qtarget)
+				if Menu.Debug.DebugCast then PrintChat("Cast W on target in combo") end
 			end
 		elseif Qtarget and W.status == 0 and (os.clock() - E:GetLastCastTime() > 0.7) and (os.clock() - Q:GetLastCastTime() > 0.7) then
 			local validball = GetWValidBall()
 			if validball then
 				W:Cast(Qtarget)
+				if Menu.Debug.DebugCast then PrintChat("Cast W on target for get ball") end
 			end
 		end
 
@@ -464,6 +487,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
 			local pos = Vector(myHero.visionPos) + Q.range * (Vector(QEtargetPos) - Vector(myHero.visionPos)):normalized()
 			if GetDistance(QEtargetPos, pos) <= (-0.6 * Q.range + 966) then
 				WECombo = os.clock()
+				if Menu.Debug.DebugCast then PrintChat("Throw ball in WE combo") end
 				W:Cast(pos.x, pos.z)
 			end
 		end
@@ -473,6 +497,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
 		if Qtarget and os.clock() - W:GetLastCastTime() > 0.25 and os.clock() - E:GetLastCastTime() > 0.25 then
 			VP.ShotAtMaxRange = true
 			Q:Cast(Qtarget)
+			if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
 			VP.ShotAtMaxRange = false
 		end
 	end
@@ -505,6 +530,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
 							local pointSegment, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(SP, EP, enemyPos)
 							if isOnSegment and GetDistanceSqr(pointLine, enemyPos) <= (Widths[_QE] + VP:GetHitBox(enemy))^2 then
 								CastSpell(_E, ball.object.x, ball.object.z)
+								if Menu.Debug.DebugCast then PrintChat("Cast E to ball in direction of enemys in combo") end
 							end
 						end
 					end
@@ -525,6 +551,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
 
 		if _IGNITE and GetDistanceSqr(Qtarget.visionPos, myHero.visionPos) < 600 * 600 and (DLib:IsKillable(Rtarget, GetCombo())  or (os.clock() - UseRTime < 10)) then
 			CastSpell(_IGNITE, Rtarget)
+			if Menu.Debug.DebugCast then PrintChat("Cast ignite on target") end
 		end
 	end
 
@@ -533,7 +560,10 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR)
 			if ValidTarget(enemy) and (not Menu.R.Targets[enemy.hash] or (os.clock() - UseRTime < 10)) and GetDistanceSqr(enemy.visionPos, myHero.visionPos) < R.rangeSqr then
 				if DLib:IsKillable(enemy, GetCombo())  or (os.clock() - UseRTime < 10) then
 					if not DLib:IsKillable(enemy, {_Q, _E, _W})  or (os.clock() - UseRTime < 10) then
-						R:Cast(enemy)
+						if not HasBuff(enemy, "UndyingRage") and not HasBuff(enemy, "JudicatorIntervention") then
+							R:Cast(enemy)
+							if Menu.Debug.DebugCast then PrintChat("UR FACE MY BALLS (R in combo) to target: " .. enemy.charName) end
+						end
 					end
 				end
 			end
@@ -561,8 +591,10 @@ function Farm()
 		if W.status == 0 then
 			if #MeleeMinions > 1 then
 				W:Cast(MeleeMinions[1].x, MeleeMinions[1].z)
+				if Menu.Debug.DebugCast then PrintChat("Cast W to first melee minion") end
 			elseif #CasterMinions > 1 then
 				W:Cast(CasterMinions[1].x, CasterMinions[1].z)
+				if Menu.Debug.DebugCast then PrintChat("Cast W to first caster minion") end
 			end
 		else
 			local BestPos1, BestHit1 = GetBestCircularFarmPosition(Ranges[_W], Widths[_W]*1.1, CasterMinions)
@@ -570,8 +602,10 @@ function Farm()
 
 			if BestHit1 > 2 or (BestPos1 and #CasterMinions <= 2) then
 				W:Cast(BestPos1.x, BestPos1.z)
+				if Menu.Debug.DebugCast then PrintChat("Cast W on best hit position (Caster)") end
 			elseif BestHit2 > 2 or (BestPos2 and #MeleeMinions <= 2) then
 				W:Cast(BestPos2.x, BestPos2.z)
+				if Menu.Debug.DebugCast then PrintChat("Cast W on best hit position (Melee)") end
 			end
 
 		end
@@ -586,8 +620,10 @@ function Farm()
 
 		if BestPos1 and BestHit1 > 1 then
 			CastSpell(_Q, BestPos1.x, BestPos1.z)
+			if Menu.Debug.DebugCast then PrintChat("Cast Q on best hit position (Caster)") end
 		elseif BestPos2 and BestHit2 > 1 then
 			CastSpell(_Q, BestPos2.x, BestPos2.z)
+			if Menu.Debug.DebugCast then PrintChat("Cast Q on best hit position (Melee)") end
 		end
 	end
 
@@ -596,6 +632,7 @@ function Farm()
 		local BestPos, BestHit = GetBestCircularFarmPosition(E.range, Widths[_Q], AllMinions)
 		if BestHit > 4 then
 			E:Cast(BestPos.x, BestPos.z)
+			if Menu.Debug.DebugCast then PrintChat("Cast E if hit >4 minions") end
 		else
 			local validballs = GetValidBalls()
 			local maxcount = 0
@@ -620,6 +657,7 @@ function Farm()
 			end
 			if maxcount > 2 then
 				E:Cast(maxpos.x, maxpos.z)
+				if Menu.Debug.DebugCast then PrintChat("Cast E in farm counting balls") end
 			end
 		end
 	end
@@ -636,10 +674,9 @@ function JungleFarm()
 	local CloseMinion = CloseMinions[1]
 	local FarMinion = AllMinions[1]
 	
-	if killWithW and gotWObject then
-			W:Cast(myHero.x, myHero.z)
-			killWithW = false
-			gotWObject = false
+	if WStatus == "JungleSteal" then
+		W:Cast(myHero.x, myHero.z)
+		WStatus = nil
 	end
 	if ValidTarget(CloseMinion) then
 		local selectedTarget = GetTarget()
@@ -648,10 +685,9 @@ function JungleFarm()
 			DrawJungleStealingIndicator = true
 			SOWi:DisableAttacks()
 			if ValidTarget(selectedTarget) and DLib:IsKillable(selectedTarget, {_W}) and GetDistanceSqr(myHero.visionPos, selectedTarget) <= W.rangeSqr and W:IsReady() then
-				if W.status == 0 then
+				if WStatus == nil then
 					W:Cast(selectedTarget.x, selectedTarget.z)
-					killWithW = true
-					gotWObject = true
+					WStatus = "JungleSteal"
 				end
 			end
 		else
@@ -664,11 +700,11 @@ function JungleFarm()
 				for i, ball in ipairs(activeballs) do
 					targetBall = ball
 				end
-				if UseQ and os.clock()-Q:GetLastCastTime() > 1 and os.clock()-Q:GetLastCastTime() < 6 and not gotWObject and targetBall ~= nil then
+				if UseQ and os.clock()-Q:GetLastCastTime() > 1 and os.clock()-Q:GetLastCastTime() < 6 and WStatus == nil and targetBall ~= nil then
 					W:Cast(targetBall.object.x, targetBall.object.z)
-					gotWObject = true
+					WStatus = "HaveBall"
 				else
-					if gotWObject == true then
+					if WStatus == "HaveBall" then
 					local ValidMinion = nil
 					----=== Valid minion
 					for i, minion in ipairs(JungleMinions.objects) do
@@ -684,7 +720,7 @@ function JungleFarm()
 					----=== Finished
 					W:Cast(ValidMinion.x, ValidMinion.z)
 					--W:Cast(myHero.x, myHero.z)
-					gotWObject = false
+					WStatus = nil
 				end
 				end
 				
@@ -723,9 +759,9 @@ function Combo()
 	UseSpells(Menu.Combo.UseQ, Menu.Combo.UseW, Menu.Combo.UseE, Menu.Combo.UseEQ, Menu.Combo.UseR)
 end
 
-function Harass()
+function Harass(target)
 	if Menu.Harass.ManaCheck > (myHero.mana / myHero.maxMana) * 100 then return end
-	UseSpells(Menu.Harass.UseQ, Menu.Harass.UseW, Menu.Harass.UseE, Menu.Harass.UseEQ, false)
+	UseSpells(Menu.Harass.UseQ, Menu.Harass.UseW, Menu.Harass.UseE, Menu.Harass.UseEQ, false, target)
 end
 
 function OnTick()
@@ -736,9 +772,13 @@ function OnTick()
 	UpdateSpellData()--update the spells data
 	DrawEQIndicators = false
 
+	if os.clock() - W:GetLastCastTime() > 1 and not W:IsReady() then
+		WStatus = nil
+	end
+	
 	if Menu.Combo.Enabled then
 		Combo()
-	elseif Menu.Harass.Enabled or Menu.Harass.Enabled2 then
+	elseif (Menu.Harass.Enabled or Menu.Harass.Enabled2) and not Menu.Harass.PP then
 		Harass()
 	end
 
@@ -806,12 +846,8 @@ end
 myHero.barData = {PercentageOffset = {x = 0, y = 0}}
 
 function OnDraw()
-	if Menu.Debug.DebugMode == 2 then
-		-------------------------------------
-		if Menu.Debug.DebugBall == 2 then
-			BTOnDraw()
-		end
-		-------------------------------------
+	if Menu.Debug.DebugBall == 2 then
+		BTOnDraw()
 	end
 	if DrawEQIndicators then
 		DrawCircle3D(mousePos.x, mousePos.y, mousePos.z, 200, 3, GetDistanceToClosestHero(mousePos) < 200 * 200 and ARGB(200, 255, 0, 0) or ARGB(200, 0, 255, 0), 20)--sorry for colorblind people D:
