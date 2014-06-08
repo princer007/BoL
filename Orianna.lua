@@ -6,7 +6,7 @@ Feel free using this, but please, report about an "unusual" moves or things
 http://botoflegends.com/forum/user/89725-princer007/
 Include screenshot and describing of error(what were you doing when it appear)
 
-]]]
+]]
 if myHero.charName ~= "Orianna" then return end
 
 local version = 1.188
