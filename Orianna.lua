@@ -1,3 +1,12 @@
+--[[[
+
+Hello, my young, curious cheater
+Feel free using this, but please, report about an "unusual" moves or things
+
+http://botoflegends.com/forum/user/89725-princer007/
+Include screenshot and describing of error(what were you doing when it appear)
+
+]]]
 if myHero.charName ~= "Orianna" then return end
 
 local version = 1.188
@@ -64,14 +73,6 @@ local InitiatorsList =
 ["Amumu"] = "BandageToss",
 ["Urgot"] = "UrgotSwap2",
 ["Rengar"] = "RengarR",
-}
-
-local InterruptList =
-{
-["Katarina"] = "KatarinaR",
-["Malzahar"] = "AlZaharNetherGrasp",
-["Warwick"] = "InfiniteDuress",
-["Velkoz"] = "VelkozR"
 }
 
 --[[Spell data]]
@@ -578,20 +579,6 @@ function OnTickChecks()
 			end
 		end
 	end
-	--[[ Usefull now
-	if Menu.Misc.Interrupt then
-		for i, unit in ipairs(GetEnemyHeroes()) do
-			for champion, spell in pairs(InterruptList) do
-				if GetDistance(unit) <= spellData[_Q].range and LastChampionSpell[unit.networkID] and spell == LastChampionSpell[unit.networkID].name and (os.clock() - LastChampionSpell[unit.networkID].time < 1) then
-					spellQ:Cast(unit.x, unit.z)
-					if GetDistance(BallPos, unit) < spellData[_R].width then
-						spellR:Cast()
-					end
-				end
-			end
-		end
-	end
-	]]
 end
 
 function OnWndMsg(Msg, Key)
