@@ -83,7 +83,7 @@ spellData = {
     [_R] = { range = 0,	   skillshotType = SKILLSHOT_CIRCULAR, width = 400, delay = 0.5,   speed = math.huge, collision = false },
 }
 ------------------------------------------------------------------------------------------------
-local MainCombo = {_AA, _Q, _W, _R, _Q, _IGNITE}
+local MainCombo = {_Q, _W, _R, _Q, _IGNITE}
 local Far = 1.3
 
 --[[Ball]]
@@ -638,7 +638,7 @@ function CountAllyHeroInRange(range, point)
 end
 
 function Combo(target)
-		if Menu.Combo.UseI and _IGNITE and IGNITEREADY and GetDistanceSqr(target.visionPos, myHero.visionPos) < 600 * 600 and DLib:IsKillable(target, MainCombo) then
+		if Menu.Combo.UseI and target and _IGNITE and IGNITEREADY and GetDistanceSqr(target.visionPos, myHero.visionPos) < 600 * 600 and DLib:IsKillable(target, MainCombo) then
 			CastSpell(_IGNITE, target)
 		end
     -- TODO: Single target / team fight checks
@@ -695,11 +695,11 @@ function Combo(target)
                         end
                     end
                 end
-                if (((GetDistanceToClosestAlly(BallPos) < spellData[_Q].range * Far) and ((hitcount >= CountEnemyHeroInRange(800, BallPos))) or (potentialkills >= 2)) or kills >= 1) and hitcount >= NCounter then
+				if ((GetDistanceToClosestAlly(BallPos) < spellData[_Q].range) and (hitcount >= CountEnemyHeroInRange(spellData[_R].width, BallPos) or potentialkills >= 2 or kills >= 1) and hitcount >= NCounter) then
                     spellR:Cast()
                 end
             elseif NCounter == 1 then
-                if Menu.Misc.PaR or (target and DLib:CalcComboDamage(target, {_Q, _W, _R}) > target.health and GetDistanceToClosestAlly(BallPos) < spellData[_Q].range * Far) then
+                if (Menu.Misc.PaR and target) or (target and DLib:CalcComboDamage(target, {_Q, _W, _R}) > target.health and GetDistanceToClosestAlly(BallPos) < spellData[_Q].range * Far) then
 					CastR(target)
                 end
             end
@@ -748,7 +748,7 @@ function OnTick()
 	if Menu.Misc.PaR then
 		NCounter = 1
 	else
-		NCounter = UseRN
+		NCounter = Menu.Combo.UseRN
 	end
 	local target = GetBestTarget(spellData[_Q].range + spellData[_Q].width)
 	if not target then
