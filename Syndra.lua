@@ -174,8 +174,8 @@ function OnLoad()
 		end
 		DManager:CreateCircle(myHero, QERange, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, "Q+E Range", true, true, true)
 	Menu:addSubMenu("Debug", "Debug")
-		Menu.Debug:addParam("DebugBall",  "Track balls", SCRIPT_PARAM_ONOFF, true)
-		Menu.Debug:addParam("DebugCast",  "Cast output", SCRIPT_PARAM_ONOFF, true)
+		Menu.Debug:addParam("DebugBall",  "Track balls", SCRIPT_PARAM_ONOFF, false)
+		Menu.Debug:addParam("DebugCast",  "Cast output", SCRIPT_PARAM_ONOFF, false)
 	--[[Predicted damage on healthbars]]
 	DLib:AddToMenu(Menu.Drawings, MainCombo)
 
