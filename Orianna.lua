@@ -1,4 +1,5 @@
 --[[[
+
 Feel free using this, but please, report about an "unusual" moves or things
 
 http://botoflegends.com/forum/user/89725-princer007/
@@ -84,6 +85,7 @@ spellData = {
 local MainCombo = {_Q, _W, _R, _Q, _IGNITE}
 local Far = 1.3
 
+local DrawPrediction = nil
 --[[Ball]]
 local BallPos
 local BallMoving = false
@@ -205,7 +207,8 @@ function OnLoad()
 		Menu.Drawing:addParam("Rrange", "Draw R radius", SCRIPT_PARAM_ONOFF, false)
 		Menu.Drawing:addParam("DrawBall", "Draw ball position", SCRIPT_PARAM_ONOFF, true)
 		DLib:AddToMenu(Menu.Drawing, MainCombo)
-		
+	Menu:addSubMenu("Debug", "Debug")
+		Menu.Debug:addParam("DebugQ",  "Draw Q prediction", SCRIPT_PARAM_ONOFF, false)
 	Menu:addParam("Version", "Version", SCRIPT_PARAM_INFO, version)
 	spellW:SetAOE(true)
 	spellR:SetAOE(true)
@@ -269,16 +272,18 @@ function CheckEnemiesHitByR()
 end
 
 function CastQ(target, fast)
-	local Speed = spellData[_Q].speed * 1.5
-	local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(target, spellData[_Q].delay, spellData[_Q].width, math.huge, Speed, BallPos)
+	local Speed = spellData[_Q].speed
+	local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(target, spellData[_Q].delay, spellData[_Q].width, spellData[_Q].range, Speed, BallPos)
 	local CastPoint = CastPosition
 	if (HitChance < 2) then return end
+	DrawPrediction = CastPoint
 
 	if GetDistance(myHero.visionPos, Position) > spellData[_Q].range + spellData[_W].width + VP:GetHitBox(target) then
 		target2 = GetBestTarget(spellData[_Q].range, target)
 		if target2 then
-			CastPosition,  HitChance,  Position = VP:GetLineCastPosition(target2, spellData[_Q].delay, spellData[_Q].width, math.huge, Speed, BallPos)
+			CastPosition,  HitChance,  Position = VP:GetLineCastPosition(target2, spellData[_Q].delay, spellData[_Q].width, spellData[_Q].range, Speed, BallPos)
 			CastPoint = CastPosition
+	DrawPrediction = CastPoint
 		else
 			do return end
 		end
@@ -522,17 +527,7 @@ function GetBestTarget(Range, Ignore)
 	local LessToKilli = 0
 	local target = nil
 	
-	for i, enemy in ipairs(GetEnemyHeroes()) do
-		if ValidTarget(enemy, Range) then
-			DamageToHero = myHero:CalcMagicDamage(enemy, 200)
-			ToKill = enemy.health / DamageToHero
-			if ((ToKill < LessToKill) or (LessToKilli == 0)) and (Ignore == nil or (Ignore.networkID ~= enemy.networkID)) then
-				LessToKill = ToKill
-				LessToKilli = i
-				target = enemy
-			end
-		end
-	end
+	local target = STS:GetTarget(Range)
 	
 	if SelectedTarget ~= nil and ValidTarget(SelectedTarget, Range) and (Ignore == nil or (Ignore.networkID ~= SelectedTarget.networkID)) then
 		target = SelectedTarget
@@ -542,7 +537,7 @@ function GetBestTarget(Range, Ignore)
 end
 
 function OnTickChecks()
-
+	DrawPrediction = nil
 	IGNITEREADY = _IGNITE and myHero:CanUseSpell(_IGNITE) == READY or false
 	
 	if CountEnemyHeroInRange(spellData[_Q].range + spellData[_R].width, myHero) == 1 then
@@ -795,6 +790,9 @@ function OnDraw()
 
 	if Menu.Drawing.DrawBall then
 		DrawCircle3D(BallPos.x, BallPos.y, BallPos.z, 100, 1, ARGB(255, 0, 255, 0), 180)
+	end
+	if DrawPrediction ~= nil and Menu.Debug.DebugQ then
+		DrawCircle3D(DrawPrediction.x, DrawPrediction.y, DrawPrediction.z, 100, 3, ARGB(200, 255, 111, 111), 20)--sorry for colorblind people D:
 	end
 end
 ------------------------------------------------------------------------------------------------
