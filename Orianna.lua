@@ -1,6 +1,4 @@
 --[[[
-
-Hello, my young, curious cheater
 Feel free using this, but please, report about an "unusual" moves or things
 
 http://botoflegends.com/forum/user/89725-princer007/
@@ -147,7 +145,7 @@ function OnLoad()
 		Menu.Misc:addParam("UseR", "Auto-ultimate if it will hit", SCRIPT_PARAM_LIST, 1, { "No", ">0 targets", ">1 targets", ">2 targets", ">3 targets", ">4 targets" })
 		Menu.Misc:addParam("EQ", "Use E + Q if tEQ < %x * tQ", SCRIPT_PARAM_SLICE, 100, 0, 200)
 		Menu.Misc:addParam("PaR", "Cast R if hit 1 enemy in combo(hold)", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("J"))
-		Menu.Misc:addParam("AARange", "Minimum distance to AA in combo", SCRIPT_PARAM_SLICE, 300, 300, 525)
+		Menu.Misc:addParam("AARange", "NOT CONFIGURABLE", SCRIPT_PARAM_SLICE, 300, 300, 300)
 		Menu.Misc:addSubMenu("Auto-E on initiators", "AutoEInitiate")
 		local added = false
 		for champion, spell in pairs(InitiatorsList) do
@@ -226,7 +224,7 @@ function OnLoad()
 	else
 		_IGNITE = nil
 	end
-	PrintChat("<font color=\"#81BEF7\">[Orianna] Command: Load succesfully executed!</font>")
+	PrintChat("<font color=\"#81BEF7\">[Orianna] Command: Load</font>")
 end
 
 --[[Check the number of enemies hit by casting W]]
