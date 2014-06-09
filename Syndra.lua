@@ -1,4 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
+PrintChat("Syndra: Loading")
 local version = 1.12
 local AUTOUPDATE = false
 local SCRIPT_NAME = "Syndra"
@@ -55,6 +56,8 @@ local QERange = (Ranges[_Q] + 500)
 local QECombo = 0
 local WECombo = 0
 local EQCombo = 0
+
+local DrawPrediction = nil
 
 local WStatus = nil
 
@@ -175,12 +178,14 @@ function OnLoad()
 	Menu:addSubMenu("Debug", "Debug")
 		Menu.Debug:addParam("DebugBall",  "Track balls", SCRIPT_PARAM_ONOFF, false)
 		Menu.Debug:addParam("DebugCast",  "Cast output", SCRIPT_PARAM_ONOFF, false)
+		Menu.Debug:addParam("DebugQ",  "Draw Q prediction", SCRIPT_PARAM_ONOFF, false)
 	--[[Predicted damage on healthbars]]
 	DLib:AddToMenu(Menu.Drawings, MainCombo)
 
 	EnemyMinions = minionManager(MINION_ENEMY, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
 	JungleMinions = minionManager(MINION_JUNGLE, QERange, myHero, MINION_SORT_MAXHEALTH_DEC)
 	PosiblePets = minionManager(MINION_OTHER, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
+	PrintChat("Syndra: Loaded")
 end
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------v
@@ -495,7 +500,9 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	if UseQ then
 		if Qtarget and os.clock() - W:GetLastCastTime() > 0.25 and os.clock() - E:GetLastCastTime() > 0.25 then
 			VP.ShotAtMaxRange = true
-			Q:Cast(Qtarget)
+			local QtargetPos, Hitchance, Position = VP:GetCircularAOECastPosition(Qtarget, Delays[_Q]/2, Widths[_Q], Ranges[_Q], Speeds[_Q], myHero)
+			Q:Cast(QtargetPos.x, QtargetPos.z)
+			DrawPrediction = QtargetPos
 			if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
 			VP.ShotAtMaxRange = false
 		end
@@ -764,6 +771,7 @@ function Harass(target)
 end
 
 function OnTick()
+	DrawPrediction = nil
 	DrawJungleStealingIndicator = false
 	BTOnTick()
 	SOWi:EnableAttacks()
@@ -872,5 +880,8 @@ function OnDraw()
 
 		DrawText(tostring("AH"), 16, pos.x+1, pos.y+1, ARGB(255, 0, 0, 0))
 		DrawText(tostring("AH"), 16, pos.x, pos.y, ARGB(255, 255, 255, 255))
+	end
+	if DrawPrediction ~= nil and Menu.Debug.DebugQ then
+		DrawCircle3D(DrawPrediction.x, DrawPrediction.y, DrawPrediction.z, 100, 3, ARGB(200, 255, 111, 111), 20)--sorry for colorblind people D:
 	end
 end
