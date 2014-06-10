@@ -8,7 +8,7 @@ Include screenshot and describing of error(what were you doing when it appear)
 ]]
 if myHero.charName ~= "Orianna" then return end
 
-local version = 1.188
+local version = 1.189
 local AUTOUPDATE = false
 local SCRIPT_NAME = "Orianna"
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -76,9 +76,9 @@ local InitiatorsList =
 
 --[[Spell data]]
 spellData = {
-    [_Q] = { range = 825,  skillshotType = SKILLSHOT_LINEAR,   width = 90, delay = 0,  speed = 1800,	  collision = false },
+    [_Q] = { range = 800,  skillshotType = SKILLSHOT_LINEAR,   width = 90,  delay = 0, 	   speed = 1800,	  collision = false },
     [_W] = { range = 0,    skillshotType = SKILLSHOT_CIRCULAR, width = 250, delay = 0.25,  speed = math.huge, collision = false },
-    [_E] = { range = 1100, skillshotType = SKILLSHOT_LINEAR,   width = 60,  delay = 0.25,  speed = 1400,      collision = true  },
+    [_E] = { range = 1000, skillshotType = SKILLSHOT_LINEAR,   width = 60,  delay = 0.25,  speed = 1400,      collision = true  },
     [_R] = { range = 0,	   skillshotType = SKILLSHOT_CIRCULAR, width = 400, delay = 0.5,   speed = math.huge, collision = false },
 }
 ------------------------------------------------------------------------------------------------
@@ -201,9 +201,10 @@ function OnLoad()
 		DManager:CreateCircle(BallPos, spellData[_R].width, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawing, "R Range", true, true, true)
 		DManager:CreateCircle(myHero,  tonumber(Menu.Misc.AARange),   1, {255, 255, 255, 255}):AddToMenu(Menu.Drawing, "AA Distance", true, true, true)
 	]]
-		Menu.Drawing:addParam("AADistance", "Draw AA distance", SCRIPT_PARAM_ONOFF, true)
+		Menu.Drawing:addParam("AADistance", "Draw AA distance", SCRIPT_PARAM_ONOFF, false)
 		Menu.Drawing:addParam("Qrange", "Draw Q range", SCRIPT_PARAM_ONOFF, true)
 		Menu.Drawing:addParam("Wrange", "Draw W radius", SCRIPT_PARAM_ONOFF, false)
+		Menu.Drawing:addParam("Erange", "Draw E radius", SCRIPT_PARAM_ONOFF, false)
 		Menu.Drawing:addParam("Rrange", "Draw R radius", SCRIPT_PARAM_ONOFF, false)
 		Menu.Drawing:addParam("DrawBall", "Draw ball position", SCRIPT_PARAM_ONOFF, true)
 		DLib:AddToMenu(Menu.Drawing, MainCombo)
@@ -299,7 +300,7 @@ function CastQ(target, fast)
 		local Etarget = myHero
 
 		for i, ally in ipairs(GetAllyHeroes()) do
-			if ValidTarget(ally, Erange, false) then
+			if ValidTarget(ally, spellData[_E].range, false) then
 				local t = GetDistance(ally, CastPoint) / spellData[_Q].speed + GetDistance(ally, BallPos) / spellData[_E].speed
 				if t < MinTravelTime then
 					MinTravelTime = t
@@ -777,11 +778,11 @@ function OnDraw()
 	end
 
 	if Menu.Drawing.Erange then
-		DrawCircle3D(myHero.x, myHero.y, myHero.z, spellData[_W].width, 1, ARGB(255, 0, 255, 0), 180)
+		DrawCircle3D(myHero.x, myHero.y, myHero.z, spellData[_E].range, 1, ARGB(255, 0, 255, 0), 180)
 	end
 
 	if Menu.Drawing.Wrange then
-		DrawCircle3D(BallPos.x, BallPos.y, BallPos.z, spellData[_E].range, 1, ARGB(255, 0, 255, 0), 180)
+		DrawCircle3D(BallPos.x, BallPos.y, BallPos.z, spellData[_W].width, 1, ARGB(255, 0, 255, 0), 180)
 	end
 
 	if Menu.Drawing.Rrange then
