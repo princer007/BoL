@@ -1,6 +1,6 @@
 if myHero.charName ~= "Syndra" then return end
 PrintChat("Syndra: Loading")
-local version = 1.12
+local version = 1.13
 local AUTOUPDATE = false
 local SCRIPT_NAME = "Syndra"
 
@@ -614,7 +614,8 @@ function Farm()
 			elseif BestHit2 > 2 or (BestPos2 and #MeleeMinions <= 2) then
 				W:Cast(BestPos2.x, BestPos2.z)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on best hit position (Melee)") end
-			elseif #CasterMinions == 1 then
+			end
+			if #CasterMinions == 1 then
 				W:Cast(CasterMinions[1].x, CasterMinions[1].z)
 			elseif #MeleeMinions == 1 then
 				W:Cast(MeleeMinions[1].x, MeleeMinions[1].z)
