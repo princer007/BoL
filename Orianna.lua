@@ -8,7 +8,7 @@ Include screenshot and describing of error(what were you doing when it appear)
 ]]
 if myHero.charName ~= "Orianna" then return end
 
-local version = 1.189
+local version = 1.190
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Orianna"
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -540,7 +540,13 @@ end
 function OnTickChecks()
 	DrawPrediction = nil
 	IGNITEREADY = _IGNITE and myHero:CanUseSpell(_IGNITE) == READY or false
-	
+	--[[When the ball reaches an ally]]
+	for i,ally in ipairs(GetAllyHeroes()) do
+		if TargetHaveBuff("orianaghostself", ally) then
+			BallMoving = false
+			BallPos = ally
+		end
+	end
 	if CountEnemyHeroInRange(spellData[_Q].range + spellData[_R].width, myHero) == 1 then
 		ComboMode = _ST
 	else
@@ -828,14 +834,6 @@ function OnProcessSpell(unit, spell)
 	
 	if unit.type == "obj_AI_Hero" then
 		LastChampionSpell[unit.networkID] = {name = spell.name, time=os.clock()}
-	end
-end
-
-function OnGainBuff(unit, buff)
-	--[[When the ball reaches an ally]]
-	if unit.team == myHero.team and buff.name:lower():find("orianaghostself") then
-		BallMoving = false
-		BallPos = unit
 	end
 end
 --[[End of ball location]]
