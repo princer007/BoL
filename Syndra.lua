@@ -1,7 +1,6 @@
 if myHero.charName ~= "Syndra" then return end
-PrintChat("Syndra: Loading")
 local version = 1.13
-local AUTOUPDATE = false
+local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
