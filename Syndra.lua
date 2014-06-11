@@ -406,8 +406,8 @@ function OnCastQ(spell)
 end
 -- TODO:Prob not work cause of OnCastW not executing after WECombo
 function OnCastW(spell)
-	if os.clock() - WECombo < 1.5 then
-		CastSpell(_E, spell.endPos.x, spell.endPos.z)
+	if WECombo ~= 0 then
+		DelayAction(E:Cast(spell.endPos.x, spell.endPos.z), Delays[_W])
 		WECombo = 0
 	end
 end
@@ -501,9 +501,11 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 		if Qtarget and os.clock() - W:GetLastCastTime() > 0.25 and os.clock() - E:GetLastCastTime() > 0.25 then
 			VP.ShotAtMaxRange = true
 			local QtargetPos, Hitchance, Position = VP:GetCircularAOECastPosition(Qtarget, Delays[_Q]/2, Widths[_Q], Ranges[_Q], Speeds[_Q], myHero)
-			Q:Cast(QtargetPos.x, QtargetPos.z)
-			DrawPrediction = QtargetPos
-			if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
+			if Hitchance >= 2 then
+				Q:Cast(QtargetPos.x, QtargetPos.z)
+				DrawPrediction = QtargetPos
+				if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
+			end
 			VP.ShotAtMaxRange = false
 		end
 	end
@@ -520,7 +522,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 		end
 	end
 
-	if UseE then
+	if UseE and WECombo == 0 then
 		--Check to stun people with E
 		local validballs = GetValidBalls()
 		for i, enemy in ipairs(GetEnemyHeroes()) do
@@ -612,8 +614,12 @@ function Farm()
 			elseif BestHit2 > 2 or (BestPos2 and #MeleeMinions <= 2) then
 				W:Cast(BestPos2.x, BestPos2.z)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on best hit position (Melee)") end
+			elseif #CasterMinions == 1 then
+				W:Cast(CasterMinions[1].x, CasterMinions[1].z)
+			elseif #MeleeMinions == 1 then
+				W:Cast(MeleeMinions[1].x, MeleeMinions[1].z)
 			end
-
+			W:Cast(myHero.x, myHero.z)
 		end
 	end
 
