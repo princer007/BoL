@@ -9,7 +9,7 @@ Include screenshot and describing of error(what were you doing when it appear)
 if myHero.charName ~= "Orianna" then return end
 
 local version = 1.189
-local AUTOUPDATE = false
+local AUTOUPDATE = true
 local SCRIPT_NAME = "Orianna"
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
