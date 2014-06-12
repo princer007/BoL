@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.13
+local version = 1.14
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -158,6 +158,7 @@ function OnLoad()
 
 	Menu:addSubMenu("Misc", "Misc")
 		Menu.Misc:addParam("WPet",  "Auto grab pets using W", SCRIPT_PARAM_ONOFF, true)
+		Menu.Misc:addParam("PRQ", "Prediction sensitivity(Q)", SCRIPT_PARAM_SLICE, 2, 1, 4)
 
 		Menu.Misc:addSubMenu("Auto-Interrupt", "Interrupt")
 			Interrupter(Menu.Misc.Interrupt, OnInterruptSpell)
@@ -499,12 +500,10 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	if UseQ then
 		if Qtarget and os.clock() - W:GetLastCastTime() > 0.25 and os.clock() - E:GetLastCastTime() > 0.25 then
 			VP.ShotAtMaxRange = true
-			local QtargetPos, Hitchance, Position = VP:GetCircularAOECastPosition(Qtarget, Delays[_Q]/2, Widths[_Q], Ranges[_Q], Speeds[_Q], myHero)
-			if Hitchance >= 2 then
-				Q:Cast(QtargetPos.x, QtargetPos.z)
-				DrawPrediction = QtargetPos
-				if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
-			end
+			local QtargetPos = VP:GetCircularAOECastPosition(Qtarget, (Delays[_Q]/Menu.Misc.PRQ), Widths[_Q], Ranges[_Q], Speeds[_Q], myHero)
+			Q:Cast(QtargetPos.x, QtargetPos.z)
+			DrawPrediction = QtargetPos
+			if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
 			VP.ShotAtMaxRange = false
 		end
 	end
@@ -685,6 +684,9 @@ function JungleFarm()
 
 	local CloseMinion = CloseMinions[1]
 	local FarMinion = AllMinions[1]
+	if not CloseMinion and os.clock()-Q:GetLastCastTime()>0.5 then 
+		W:Cast(myHero.x, myHero.z)
+	end
 	
 	if WStatus == "JungleSteal" then
 		W:Cast(myHero.x, myHero.z)
@@ -713,10 +715,10 @@ function JungleFarm()
 					targetBall = ball
 				end
 				if UseQ and os.clock()-Q:GetLastCastTime() > 1 and os.clock()-Q:GetLastCastTime() < 6 and WStatus == nil and targetBall ~= nil then
-					W:Cast(targetBall.object.x, targetBall.object.z)
+					DelayAction(function() return W:Cast(targetBall.object.x, targetBall.object.z) end, 0.1)
+					--W:Cast(targetBall.object.x, targetBall.object.z)
 					WStatus = "HaveBall"
-				else
-					if WStatus == "HaveBall" then
+				elseif WStatus == "HaveBall" then
 					local ValidMinion = nil
 					----=== Valid minion
 					for i, minion in ipairs(JungleMinions.objects) do
@@ -726,17 +728,16 @@ function JungleFarm()
 							end
 						end
 					end
-					if ValidMinion == nil then 
+					if not ValidMinion ~= nil then 
 						ValidMinion = CloseMinion 
 					end
 					----=== Finished
+					WStatus = nil
 					W:Cast(ValidMinion.x, ValidMinion.z)
 					--W:Cast(myHero.x, myHero.z)
-					WStatus = nil
 				end
-				end
-				
 			end
+				
 
 			if UseE and os.clock() - Q:GetLastCastTime() > 1 then
 				E:Cast(CloseMinion)
