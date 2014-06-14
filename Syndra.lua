@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.14
+local version = 1.15
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -41,7 +41,7 @@ local _QE = 1337
 local Ranges = {[_Q] = 790,       [_W] = 925,  [_E] = 700,       [_R] = 675}
 local Widths = {[_Q] = 125,       [_W] = 190,  [_E] = 45 * 0.5,  [_R] = 1,    [_QE] = 60}
 local Delays = {[_Q] = 0.6,       [_W] = 0.25, [_E] = 0.25,      [_R] = 0.25, [_QE] = 1800} ---_QE delay updates in function of _E delay + Speed and the distance to the ball
-local Speeds = {[_Q] = math.huge, [_W] = 1450, [_E] = 2500,      [_R] = 1,    [_QE] = 1600}
+local Speeds = {[_Q] = math.huge, [_W] = 1500, [_E] = 2500,      [_R] = 1,    [_QE] = 1600}
 local FocusJungleNames = {"GiantWolf8.1.1","AncientGolem7.1.1","Wraith9.1.1","LizardElder10.1.1","Golem11.1.2","GiantWolf2.1.1","AncientGolem1.1.1",
 "Wraith3.1.1","LizardElder4.1.1","Golem5.1.2","GreatWraith13.1.1","GreatWraith14.1.1"}
 
@@ -500,10 +500,12 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	if UseQ then
 		if Qtarget and os.clock() - W:GetLastCastTime() > 0.25 and os.clock() - E:GetLastCastTime() > 0.25 then
 			VP.ShotAtMaxRange = true
-			local QtargetPos = VP:GetCircularAOECastPosition(Qtarget, (Delays[_Q]/Menu.Misc.PRQ), Widths[_Q], Ranges[_Q], Speeds[_Q], myHero)
-			Q:Cast(QtargetPos.x, QtargetPos.z)
-			DrawPrediction = QtargetPos
-			if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
+			local QtargetPos, hitchance = VP:GetCircularAOECastPosition(Qtarget, (Delays[_Q]/Menu.Misc.PRQ), Widths[_Q], Ranges[_Q], Speeds[_Q], myHero)
+			if hitchance >=2 then
+				Q:Cast(QtargetPos.x, QtargetPos.z)
+				DrawPrediction = QtargetPos
+				if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
+			end
 			VP.ShotAtMaxRange = false
 		end
 	end
@@ -612,13 +614,13 @@ function Farm()
 			elseif BestHit2 > 2 or (BestPos2 and #MeleeMinions <= 2) then
 				W:Cast(BestPos2.x, BestPos2.z)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on best hit position (Melee)") end
+			else
+				if #EnemyMinions.objects == 1 and (BestHit1 < 2 or BestHit2 < 2)  then
+					W:Cast(EnemyMinions.objects[1].x, EnemyMinions.objects[1].z)
+				elseif #EnemyMinions.objects < 1 and (BestHit1 < 2 or BestHit2 < 2) then
+					W:Cast(myHero.x, myHero.z)
+				end
 			end
-			if #CasterMinions == 1 then
-				W:Cast(CasterMinions[1].x, CasterMinions[1].z)
-			elseif #MeleeMinions == 1 then
-				W:Cast(MeleeMinions[1].x, MeleeMinions[1].z)
-			end
-			W:Cast(myHero.x, myHero.z)
 		end
 	end
 
