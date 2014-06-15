@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.15
+local version = 1.2
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -36,7 +36,7 @@ if RequireI.downloadNeeded == true then return end
 
 local MainCombo = {ItemManager:GetItem("DFG"):GetId(), _Q, _W, _E, _R, _R, _R, _IGNITE}
 local _QE = 1337
-
+local WObject = false
 --SpellData
 local Ranges = {[_Q] = 790,       [_W] = 925,  [_E] = 700,       [_R] = 675}
 local Widths = {[_Q] = 125,       [_W] = 190,  [_E] = 45 * 0.5,  [_R] = 1,    [_QE] = 60}
@@ -58,11 +58,10 @@ local EQCombo = 0
 
 local DrawPrediction = nil
 
-local WStatus = nil
-
 local DontUseRTime = 0
 local UseRTime = 0
 
+local RegisterCallbacks = {}
 function OnLoad()
 	VP = VPrediction()
 	SOWi = SOW(VP)
@@ -70,24 +69,27 @@ function OnLoad()
 	DLib = DamageLib()
 	DManager = DrawManager()
 
-	Q = Spell(_Q, Ranges[_Q], false)
-	Q:TrackCasting("SyndraQ")
-	Q:RegisterCastCallback(OnCastQ)
-
+	Q = Spell(_Q, Ranges[_Q], VIP_USER)
 	W = Spell(_W, Ranges[_W], false)
-	W:TrackCasting("SyndraW")
-	W:RegisterCastCallback(function() end)
-
 	W2 = Spell(_W, Ranges[_W], false) 
-	W2:TrackCasting("syndraw2")
-	W2:RegisterCastCallback(OnCastW)
-
 	E = Spell(_E, Ranges[_E], false)
-	E:TrackCasting({"SyndraE", "syndrae5"})
-	E:RegisterCastCallback(OnCastE)
-
 	EQ = Spell(_E, Ranges[_E], false)
-	R = Spell(_R, Ranges[_R], false)
+	R = Spell(_R, Ranges[_R], VIP_USER)
+	if VIP_USER then
+		Q:TrackCasting("SyndraQ")
+		Q:RegisterCastCallback(OnCastQ)
+		
+		W:TrackCasting("SyndraW")
+		W:RegisterCastCallback(function() end)
+		
+		W2:TrackCasting("syndraw2")
+		W2:RegisterCastCallback(OnCastW)
+		
+		E:TrackCasting({"SyndraE", "syndrae5"})
+		E:RegisterCastCallback(OnCastE)
+	else
+		--RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"}
+	end
 
 	Q:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_Q], Delays[_Q], Speeds[_Q], false)
 	W:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_W], Delays[_W], Speeds[_W], false)
@@ -157,7 +159,9 @@ function OnLoad()
 		Menu.R:addParam("DontUseR", "Don't use R in the next 10 seconds", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("G"))
 
 	Menu:addSubMenu("Misc", "Misc")
-		Menu.Misc:addParam("WPet",  "Auto grab pets using W", SCRIPT_PARAM_ONOFF, true)
+		if VIP_USER then
+			Menu.Misc:addParam("WPet",  "Auto grab pets using W", SCRIPT_PARAM_ONOFF, true)
+		end
 		Menu.Misc:addParam("PRQ", "Prediction sensitivity(Q)", SCRIPT_PARAM_SLICE, 2, 1, 4)
 
 		Menu.Misc:addSubMenu("Auto-Interrupt", "Interrupt")
@@ -179,6 +183,8 @@ function OnLoad()
 		Menu.Debug:addParam("DebugBall",  "Track balls", SCRIPT_PARAM_ONOFF, false)
 		Menu.Debug:addParam("DebugCast",  "Cast output", SCRIPT_PARAM_ONOFF, false)
 		Menu.Debug:addParam("DebugQ",  "Draw Q prediction", SCRIPT_PARAM_ONOFF, false)
+		--Menu.Debug:addParam("DebugW",  "Debug W state", SCRIPT_PARAM_ONOFF, false)
+		--Menu.Debug:permaShow("DebugW")
 	--[[Predicted damage on healthbars]]
 	DLib:AddToMenu(Menu.Drawings, MainCombo)
 
@@ -187,7 +193,26 @@ function OnLoad()
 	PosiblePets = minionManager(MINION_OTHER, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
 	PrintChat("Syndra: Loaded")
 end
+function OnRecvPacket(p)
+	if p.header == 112 then
+		p.pos = 1
+		local NetworkID = p:DecodeF()
+		local Active = p:Decode1()
 
+		if NetworkID and Active == 1 then
+			if not WObject then
+				for i, ball in ipairs(Balls) do
+					if ball.networkID == NetworkID then
+						Balls[i].endT = os.clock() + BallDuration - GetLatency()/2000
+					end
+				end
+			end
+			WObject = objManager:GetObjectByNetworkId(NetworkID)
+		else
+			WObject = nil
+		end
+	end
+end
 ------------------------------------------------------------------------------------------------------------------------------------------------------------v
 ------------------------------------------------------------------------------------------------------------------------------------------------------------v
 ------------------------------------------------------------------------------------------------------------------------------------------------------------v
@@ -355,6 +380,16 @@ end
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 function OnProcessSpell(unit, spell)
+if not VIP_USER and unit == myHero then
+--RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"}
+	if spell.name:lower():find("syndraq") then
+		OnCastQ(spell)
+	elseif spell.name:lower():find("syndraw2") then
+		OnCastW(spell)
+	elseif spell.name:lower():find("syndrae") or spell.name:lower():find("syndrae5") then
+		OnCastE(spell)
+	end
+end
 if (Menu.Harass.Enabled or Menu.Harass.Enabled2) and Menu.Harass.PP then
 		if unit.team ~= myHero.team then
 		    if unit.type == myHero.type and unit ~= nil then
@@ -595,7 +630,7 @@ function Farm()
 	local CasterMinions = SelectUnits(EnemyMinions.objects, function(t) return (t.charName:lower():find("wizard") or t.charName:lower():find("caster")) and ValidTarget(t) and GetDistanceSqr(t) < W.rangeSqr end)
 	local MeleeMinions = SelectUnits(EnemyMinions.objects, function(t) return (t.charName:lower():find("basic") or t.charName:lower():find("cannon")) and ValidTarget(t) and GetDistanceSqr(t) < W.rangeSqr end)
 	
-	if UseW then
+	if UseW and W:IsReady() then
 		if W.status == 0 then
 			if #MeleeMinions > 1 then
 				W:Cast(MeleeMinions[1].x, MeleeMinions[1].z)
@@ -614,17 +649,11 @@ function Farm()
 			elseif BestHit2 > 2 or (BestPos2 and #MeleeMinions <= 2) then
 				W:Cast(BestPos2.x, BestPos2.z)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on best hit position (Melee)") end
-			else
-				if #EnemyMinions.objects == 1 and (BestHit1 < 2 or BestHit2 < 2)  then
-					W:Cast(EnemyMinions.objects[1].x, EnemyMinions.objects[1].z)
-				elseif #EnemyMinions.objects < 1 and (BestHit1 < 2 or BestHit2 < 2) then
-					W:Cast(myHero.x, myHero.z)
-				end
 			end
 		end
 	end
 
-	if UseQ and ( not UseW or W.status == 0 ) then
+	if UseQ and ( not UseW or W.status == 0 ) and Q:IsReady() then
 		CasterMinions = GetPredictedPositionsTable(VP, CasterMinions, Delays[_Q], Widths[_Q], Ranges[_Q] + Widths[_Q], math.huge, myHero, false)
 		MeleeMinions = GetPredictedPositionsTable(VP, MeleeMinions, Delays[_Q], Widths[_Q], Ranges[_Q] + Widths[_Q], math.huge, myHero, false)
 
@@ -639,8 +668,8 @@ function Farm()
 			if Menu.Debug.DebugCast then PrintChat("Cast Q on best hit position (Melee)") end
 		end
 	end
-
-	if UseE and (not Q:IsReady() or not UseQ) then
+ 
+	if UseE and (not Q:IsReady() or not UseQ) and E:IsReady() then
 		local AllMinions = SelectUnits(EnemyMinions.objects, function(t) return ValidTarget(t) and GetDistanceSqr(t) < E.rangeSqr end)
 		local BestPos, BestHit = GetBestCircularFarmPosition(E.range, Widths[_Q], AllMinions)
 		if BestHit > 4 then
@@ -762,7 +791,6 @@ function UpdateSpellData()
 	if R.range ~= (Ranges[_R] + 75) and R:GetLevel() == 5 then
 		R:SetRange(Ranges[_R] + 75)
 	end
-
 	W.status = WObject and 1 or 0
 end
 
@@ -788,6 +816,8 @@ function OnTick()
 	UpdateSpellData()--update the spells data
 	DrawEQIndicators = false
 
+	Menu.Debug.DebugW = WObject
+	
 	if os.clock() - W:GetLastCastTime() > 1 and not W:IsReady() then
 		WStatus = nil
 	end
