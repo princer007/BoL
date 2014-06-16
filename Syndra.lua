@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.31
+local version = 1.32
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -36,7 +36,7 @@ if RequireI.downloadNeeded == true then return end
 
 local MainCombo = {ItemManager:GetItem("DFG"):GetId(), _Q, _W, _E, _R, _R, _R, _IGNITE}
 local _QE = 1337
-local WObject = false
+local WObject
 --SpellData
 local Ranges = {[_Q] = 790,       [_W] = 925,  [_E] = 700,       [_R] = 675}
 local Widths = {[_Q] = 125,       [_W] = 190,  [_E] = 45 * 0.5,  [_R] = 1,    [_QE] = 60}
@@ -513,7 +513,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	end
 	if UseW then
 		if Qtarget and W.status == 1 and (os.clock() - Q:GetLastCastTime() > 0.25) and (os.clock() - E:GetLastCastTime() > 0.25) then
-			if WObject.charName == nil or WObject.charName:lower() ~= "heimertblue" then --Don't throw the giant tower :D
+			if WObject ~= nil and (WObject.charName == nil or WObject.charName:lower() ~= "heimertblue") then --Don't throw the giant tower :D
 				W:Cast(Qtarget)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on target in combo") end
 			end
