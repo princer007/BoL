@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.33
+local version = 1.34
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -446,7 +446,7 @@ end
 function OnCastW(spell)
 if not VIP_USER then WTrack = 0 end
 	if WECombo ~= 0 then
-		DelayAction(E:Cast(spell.endPos.x, spell.endPos.z), Delays[_W])
+		DelayAction(function() E:Cast(spell.endPos.x, spell.endPos.z) end, Delays[_W])
 		WECombo = 0
 	end
 end
