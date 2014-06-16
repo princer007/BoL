@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.2
+local version = 1.31
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -82,12 +82,13 @@ function OnLoad()
 		W:TrackCasting("SyndraW")
 		W:RegisterCastCallback(function() end)
 		
-		W2:TrackCasting("syndraw2")
+		W2:TrackCasting("syndrawcast")
 		W2:RegisterCastCallback(OnCastW)
 		
 		E:TrackCasting({"SyndraE", "syndrae5"})
 		E:RegisterCastCallback(OnCastE)
 	else
+		WTrack = false
 		--RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"}
 	end
 
@@ -381,11 +382,13 @@ end
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 function OnProcessSpell(unit, spell)
 if not VIP_USER and unit == myHero then
---RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"}
+--RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"} 
 	if spell.name:lower():find("syndraq") then
 		OnCastQ(spell)
-	elseif spell.name:lower():find("syndraw2") then
+	elseif spell.name:lower():find("syndrawcast") then
 		OnCastW(spell)
+	elseif spell.name:lower():find("syndraw") then
+		OnCastWB(spell)
 	elseif spell.name:lower():find("syndrae") or spell.name:lower():find("syndrae5") then
 		OnCastE(spell)
 	end
@@ -441,12 +444,15 @@ function OnCastQ(spell)
 end
 -- TODO:Prob not work cause of OnCastW not executing after WECombo
 function OnCastW(spell)
+if not VIP_USER then WTrack = 0 end
 	if WECombo ~= 0 then
 		DelayAction(E:Cast(spell.endPos.x, spell.endPos.z), Delays[_W])
 		WECombo = 0
 	end
 end
-
+function OnCastWB(spell)
+	WTrack = 1
+end
 function OnCastE(spell)
 --[[
 	if os.clock() - EQCombo < 1.5 and EQTarget then
@@ -597,12 +603,11 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 			if Menu.Debug.DebugCast then PrintChat("Cast ignite on target") end
 		end
 	end
-
 	if UseR and not Q:IsReady() and R:IsReady() and not DFGUsed then
 		for i, enemy in ipairs(GetEnemyHeroes()) do
 			if ValidTarget(enemy) and (not Menu.R.Targets[enemy.hash] or (os.clock() - UseRTime < 10)) and GetDistanceSqr(enemy.visionPos, myHero.visionPos) < R.rangeSqr then
 				if DLib:IsKillable(enemy, GetCombo())  or (os.clock() - UseRTime < 10) then
-					if not DLib:IsKillable(enemy, {_Q, _E, _W})  or (os.clock() - UseRTime < 10) then
+					if not DLib:IsKillable(enemy, {_Q, _E, _W}) and DLib:IsKillable(enemy, GetCombo()) or (os.clock() - UseRTime < 10) then
 						if not HasBuff(enemy, "UndyingRage") and not HasBuff(enemy, "JudicatorIntervention") then
 							R:Cast(enemy)
 							if Menu.Debug.DebugCast then PrintChat("UR FACE MY BALLS (R in combo) to target: " .. enemy.charName) end
@@ -745,7 +750,7 @@ function JungleFarm()
 				for i, ball in ipairs(activeballs) do
 					targetBall = ball
 				end
-				if UseQ and os.clock()-Q:GetLastCastTime() > 1 and os.clock()-Q:GetLastCastTime() < 6 and WStatus == nil and targetBall ~= nil then
+				if (os.clock()-Q:GetLastCastTime() > Q.delay+0.1) and WStatus == nil and targetBall ~= nil then
 					DelayAction(function() return W:Cast(targetBall.object.x, targetBall.object.z) end, 0.1)
 					--W:Cast(targetBall.object.x, targetBall.object.z)
 					WStatus = "HaveBall"
@@ -791,7 +796,11 @@ function UpdateSpellData()
 	if R.range ~= (Ranges[_R] + 75) and R:GetLevel() == 5 then
 		R:SetRange(Ranges[_R] + 75)
 	end
-	W.status = WObject and 1 or 0
+	if VIP_USER then
+		W.status = WObject and 1 or 0
+	else 
+		W.status = WTrack
+	end
 end
 
 function Combo()
@@ -816,8 +825,8 @@ function OnTick()
 	UpdateSpellData()--update the spells data
 	DrawEQIndicators = false
 
-	Menu.Debug.DebugW = WObject
-	
+	--Menu.Debug.DebugW = WTrack or W.status
+	--if WTrack == 1 then PrintChat("OLOLOLO") end
 	if os.clock() - W:GetLastCastTime() > 1 and not W:IsReady() then
 		WStatus = nil
 	end
