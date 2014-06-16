@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.32
+local version = 1.33
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -512,7 +512,11 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 		UseR = false
 	end
 	if UseW then
-		if Qtarget and W.status == 1 and (os.clock() - Q:GetLastCastTime() > 0.25) and (os.clock() - E:GetLastCastTime() > 0.25) then
+		if Qtarget and W.status == 1 and (os.clock() - Q:GetLastCastTime() > 0.25)  then
+			if not VIP_USER then 
+				W:Cast(Qtarget)
+				if Menu.Debug.DebugCast then PrintChat("Cast W on target in combo") end
+			end
 			if WObject ~= nil and (WObject.charName == nil or WObject.charName:lower() ~= "heimertblue") then --Don't throw the giant tower :D
 				W:Cast(Qtarget)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on target in combo") end
