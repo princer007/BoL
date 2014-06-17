@@ -38,7 +38,7 @@ local MainCombo = {ItemManager:GetItem("DFG"):GetId(), _Q, _W, _E, _R, _R, _R, _
 local _QE = 1337
 local WObject
 --SpellData
-local Ranges = {[_Q] = 790,       [_W] = 925,  [_E] = 700,       [_R] = 675}
+local Ranges = {[_Q] = 800,       [_W] = 925,  [_E] = 700,       [_R] = 675}
 local Widths = {[_Q] = 125,       [_W] = 190,  [_E] = 45 * 0.5,  [_R] = 1,    [_QE] = 60}
 local Delays = {[_Q] = 0.6,       [_W] = 0.25, [_E] = 0.25,      [_R] = 0.25, [_QE] = 1800} ---_QE delay updates in function of _E delay + Speed and the distance to the ball
 local Speeds = {[_Q] = math.huge, [_W] = 1500, [_E] = 2500,      [_R] = 1,    [_QE] = 1600}
@@ -498,7 +498,8 @@ function Cast2Q(target)
 end
 
 function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
-	local Qtarget = STS:GetTarget(W.range)
+	local Qtarget = STS:GetTarget(Q.range)
+	local Wtarget = STS:GetTarget(W.range)
 	local QEtarget = STS:GetTarget(QERange)
 	local Rtarget = STS:GetTarget(R.range)
 	local DFGUsed = false
@@ -512,19 +513,19 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 		UseR = false
 	end
 	if UseW then
-		if Qtarget and W.status == 1 and (os.clock() - Q:GetLastCastTime() > 0.25)  then
+		if Wtarget and W.status == 1 and (os.clock() - Q:GetLastCastTime() > 0.25)  then
 			if not VIP_USER then 
-				W:Cast(Qtarget)
+				W:Cast(Wtarget)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on target in combo") end
 			end
 			if WObject ~= nil and (WObject.charName == nil or WObject.charName:lower() ~= "heimertblue") then --Don't throw the giant tower :D
-				W:Cast(Qtarget)
+				W:Cast(Wtarget)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on target in combo") end
 			end
-		elseif Qtarget and W.status == 0 and (os.clock() - E:GetLastCastTime() > 0.7) and (os.clock() - Q:GetLastCastTime() > 0.7) then
+		elseif Wtarget and W.status == 0 and (os.clock() - E:GetLastCastTime() > 0.7) and (os.clock() - Q:GetLastCastTime() > 0.7) then
 			local validball = GetWValidBall()
 			if validball then
-				W:Cast(Qtarget)
+				W:Cast(Wtarget)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on target for get ball") end
 			end
 		end
