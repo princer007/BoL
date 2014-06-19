@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.35
+local version = 1.36
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -38,10 +38,10 @@ local MainCombo = {ItemManager:GetItem("DFG"):GetId(), _Q, _W, _E, _R, _R, _R, _
 local _QE = 1337
 local WObject
 --SpellData
-local Ranges = {[_Q] = 800,       [_W] = 925,  [_E] = 700,       [_R] = 675}
-local Widths = {[_Q] = 125,       [_W] = 190,  [_E] = 45 * 0.5,  [_R] = 1,    [_QE] = 60}
-local Delays = {[_Q] = 0.6,       [_W] = 0.25, [_E] = 0.25,      [_R] = 0.25, [_QE] = 1800} ---_QE delay updates in function of _E delay + Speed and the distance to the ball
-local Speeds = {[_Q] = math.huge, [_W] = 1500, [_E] = 2500,      [_R] = 1,    [_QE] = 1600}
+local Ranges = {[_Q] = 800,       [_W] = 920,  [_E] = 700,       [_R] = 675}
+local Widths = {[_Q] = 200,       [_W] = 200,  [_E] = 45 * 0.5,  [_R] = 1,    [_QE] = 60}
+local Delays = {[_Q] = 0.25,      [_W] = 0.5,  [_E] = 0.5,       [_R] = 0.25, [_QE] = 1800} ---_QE delay updates in function of _E delay + Speed and the distance to the ball
+local Speeds = {[_Q] = 3000,	  [_W] = 1450, [_E] = 2500,      [_R] = 1100, [_QE] = 1600}
 local FocusJungleNames = {"GiantWolf8.1.1","AncientGolem7.1.1","Wraith9.1.1","LizardElder10.1.1","Golem11.1.2","GiantWolf2.1.1","AncientGolem1.1.1",
 "Wraith3.1.1","LizardElder4.1.1","Golem5.1.2","GreatWraith13.1.1","GreatWraith14.1.1"}
 
@@ -546,7 +546,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	if UseQ then
 		if Qtarget and os.clock() - W:GetLastCastTime() > 0.25 and os.clock() - E:GetLastCastTime() > 0.25 then
 			VP.ShotAtMaxRange = true
-			local QtargetPos, hitchance = VP:GetCircularAOECastPosition(Qtarget, (Delays[_Q]/Menu.Misc.PRQ), Widths[_Q], Ranges[_Q], Speeds[_Q], myHero)
+			local QtargetPos, hitchance = VP:GetCircularAOECastPosition(Qtarget, Delays[_Q], Widths[_Q], Ranges[_Q], (Speeds[_Q]*tonumber(Menu.Misc.PRQ)), myHero)
 			if hitchance >=2 then
 				Q:Cast(QtargetPos.x, QtargetPos.z)
 				DrawPrediction = QtargetPos
