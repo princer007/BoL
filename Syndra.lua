@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.4
+local version = 1.41
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -79,24 +79,7 @@ function OnLoad()
 
 	Menu:addSubMenu("Target selector", "STS")
 		STS:AddToMenu(Menu.STS)
---[[
-	Menu:addSubMenu("Spell Settings", "SPS")
-		Menu.SPS:addSubMenu("Q", "Q")
-			Menu.SPS.Q:addParam("predType", "Prediction type", SCRIPT_PARAM_LIST, 1, {"vPrediction", "Prodiction"})
-			Menu.SPS.Q:addParam("packetCast", "Use packets", SCRIPT_PARAM_ONOFF, VIP_USER)
-		Menu.SPS:addSubMenu("W", "W")
-			Menu.SPS.W:addParam("predType", "Prediction type", SCRIPT_PARAM_LIST, 1, {"vPrediction", "Prodiction"})
-			Menu.SPS.W:addParam("packetCast", "Use packets", SCRIPT_PARAM_ONOFF, false)
-		Menu.SPS:addSubMenu("E", "E")
-			Menu.SPS.E:addParam("predType", "Prediction type", SCRIPT_PARAM_LIST, 1, {"vPrediction", "Prodiction"})
-			Menu.SPS.E:addParam("packetCast", "Use packets", SCRIPT_PARAM_ONOFF, VIP_USER)
-		Menu.SPS:addSubMenu("EQ", "EQ")
-			Menu.SPS.EQ:addParam("predType", "Prediction type", SCRIPT_PARAM_LIST, 1, {"vPrediction", "Prodiction"})
-			Menu.SPS.EQ:addParam("packetCast", "Use packets", SCRIPT_PARAM_ONOFF, VIP_USER)
-		Menu.SPS:addSubMenu("R", "R")
-			--Menu.SPS.R:addParam("predType", "Prediction type", SCRIPT_PARAM_LIST, 1, {"vPrediction", "Prodiction"})
-			Menu.SPS.R:addParam("packetCast", "Use packets", SCRIPT_PARAM_ONOFF, VIP_USER)
-]]
+
 	Menu:addSubMenu("Combo", "Combo")
 		Menu.Combo:addParam("UseQ", "Use Q", SCRIPT_PARAM_ONOFF, true)
 		Menu.Combo:addParam("UseW", "Use W", SCRIPT_PARAM_ONOFF, true)
@@ -570,11 +553,11 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 			VP.ShotAtMaxRange = true
 			--local QtargetPos, hitchance = VP:GetCircularAOECastPosition(Qtarget, Delays[_Q], Widths[_Q], Ranges[_Q], (Speeds[_Q]*tonumber(Menu.Misc.PRQ)), myHero)
 			local QtargetPos, hitchance = Q:GetPrediction(Qtarget)
-			--if hitchance >=2 then
+			if QtargetPos then
 				Q:Cast(QtargetPos.x, QtargetPos.z)
 				DrawPrediction = QtargetPos
 				if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
-			--end
+			end
 			VP.ShotAtMaxRange = false
 		end
 	end
@@ -861,11 +844,12 @@ function OnTick()
 	
 	--Q.packetCast
 	Q.packetCast = Menu.SPS.Q.packetCast
-	W.packetCast = Menu.SPS.W.packetCast
+	
 	E.packetCast = Menu.SPS.E.packetCast
 	EQ.packetCast = Menu.SPS.EQ.packetCast
 	R.packetCast = Menu.SPS.R.packetCast
 	]]
+	W.packetCast = false
 	--Menu.Debug.DebugW = WTrack or W.status
 	--if WTrack == 1 then PrintChat("OLOLOLO") end
 	if os.clock() - W:GetLastCastTime() > 1 and not W:IsReady() then
