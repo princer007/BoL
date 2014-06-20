@@ -540,7 +540,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 			EQ.delay = Q.range / E.speed + E.delay 
 			local QEtargetPos, Hitchance, Position = EQ:GetPrediction(QEtarget)
 			local pos = Vector(myHero.visionPos) + Q.range * (Vector(QEtargetPos) - Vector(myHero.visionPos)):normalized()
-			if GetDistance(QEtargetPos, pos) <= (-0.6 * Q.range + 966) then
+			if QEtargetPos and GetDistance(QEtargetPos, pos) <= (-0.6 * Q.range + 966) then
 				WECombo = os.clock()
 				if Menu.Debug.DebugCast then PrintChat("Throw ball in WE combo") end
 				W:Cast(pos.x, pos.z)
@@ -553,7 +553,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 			VP.ShotAtMaxRange = true
 			--local QtargetPos, hitchance = VP:GetCircularAOECastPosition(Qtarget, Delays[_Q], Widths[_Q], Ranges[_Q], (Speeds[_Q]*tonumber(Menu.Misc.PRQ)), myHero)
 			local QtargetPos, hitchance = Q:GetPrediction(Qtarget)
-			if QtargetPos then
+			if QtargetPos and hitchance and hitchance>=2 then
 				Q:Cast(QtargetPos.x, QtargetPos.z)
 				DrawPrediction = QtargetPos
 				if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
@@ -566,7 +566,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 		if not Qtarget and QEtarget and E:IsReady() and Q:IsReady() then--E + Q at max range
 			--Update the EQ speed and the range
 			EQ.delay = Q.range / E.speed 
-			local tmp, Hitchance, QEtargetPos = EQ:GetPrediction(QEtarget)
+			local QEtargetPos, Hitchance = EQ:GetPrediction(QEtarget)
 			local pos = Vector(myHero.visionPos) + Q.range * (Vector(QEtargetPos) - Vector(myHero.visionPos)):normalized()
 			if GetDistance(QEtargetPos, pos) <= (-0.6 * Q.range + 966) then
 				StartEQCombo(QEtarget)
@@ -835,20 +835,6 @@ function OnTick()
 	DLib.combo = GetCombo()
 	UpdateSpellData()--update the spells data
 	DrawEQIndicators = false
-	--[[
-	--Menu.SPS.Q.predType
-	Q:SetPredictionType(Menu.SPS.Q.predType)
-	W:SetPredictionType(Menu.SPS.W.predType)
-	E:SetPredictionType(Menu.SPS.E.predType)
-	EQ:SetPredictionType(Menu.SPS.EQ.predType)
-	
-	--Q.packetCast
-	Q.packetCast = Menu.SPS.Q.packetCast
-	
-	E.packetCast = Menu.SPS.E.packetCast
-	EQ.packetCast = Menu.SPS.EQ.packetCast
-	R.packetCast = Menu.SPS.R.packetCast
-	]]
 	W.packetCast = false
 	--Menu.Debug.DebugW = WTrack or W.status
 	--if WTrack == 1 then PrintChat("OLOLOLO") end
@@ -953,6 +939,14 @@ function OnDraw()
 
 		DrawText(tostring("AH"), 16, pos.x+1, pos.y+1, ARGB(255, 0, 0, 0))
 		DrawText(tostring("AH"), 16, pos.x, pos.y, ARGB(255, 255, 255, 255))
+	end
+	if Menu.Harass.PP and (Menu.Harass.Enabled2 or Menu.Harass.Enabled) then
+		local pos = GetEnemyHPBarPos(myHero) + Vector(0, -4)
+		pos.x = math.floor(pos.x)
+		pos.y = math.floor(pos.y)
+
+		DrawText(tostring("PP"), 16, pos.x+20, pos.y+1, ARGB(255, 0, 0, 0))
+		DrawText(tostring("PP"), 16, pos.x+20, pos.y, ARGB(255, 255, 255, 255))
 	end
 	if DrawPrediction ~= nil and Menu.Debug.DebugQ then
 		DrawCircle3D(DrawPrediction.x, DrawPrediction.y, DrawPrediction.z, 100, 3, ARGB(200, 255, 111, 111), 20)--sorry for colorblind people D:
