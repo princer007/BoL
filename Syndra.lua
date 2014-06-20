@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.36
+local version = 1.4
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -26,6 +26,9 @@ end
 local RequireI = Require("SourceLib")
 RequireI:Add("vPrediction", "https://raw.github.com/Hellsing/BoL/master/common/VPrediction.lua")
 RequireI:Add("SOW", "https://raw.github.com/Hellsing/BoL/master/common/SOW.lua")
+if FileExist(LIB_PATH.."Prodiction.lua") then
+	require("Prodiction")
+end
 RequireI:Check()
 
 if RequireI.downloadNeeded == true then return end
@@ -69,43 +72,6 @@ function OnLoad()
 	DLib = DamageLib()
 	DManager = DrawManager()
 
-	Q = Spell(_Q, Ranges[_Q], VIP_USER)
-	W = Spell(_W, Ranges[_W], false)
-	W2 = Spell(_W, Ranges[_W], false) 
-	E = Spell(_E, Ranges[_E], false)
-	EQ = Spell(_E, Ranges[_E], false)
-	R = Spell(_R, Ranges[_R], VIP_USER)
-	if VIP_USER then
-		Q:TrackCasting("SyndraQ")
-		Q:RegisterCastCallback(OnCastQ)
-		
-		W:TrackCasting("SyndraW")
-		W:RegisterCastCallback(function() end)
-		
-		W2:TrackCasting("syndrawcast")
-		W2:RegisterCastCallback(OnCastW)
-		
-		E:TrackCasting({"SyndraE", "syndrae5"})
-		E:RegisterCastCallback(OnCastE)
-	else
-		WTrack = false
-		--RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"}
-	end
-
-	Q:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_Q], Delays[_Q], Speeds[_Q], false)
-	W:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_W], Delays[_W], Speeds[_W], false)
-	W2:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_W], Delays[_W], Speeds[_W], false)
-	E:SetSkillshot(VP, SKILLSHOT_CONE, Widths[_E], Delays[_E], Speeds[_E], false) --E
-	EQ:SetSkillshot(VP, SKILLSHOT_LINEAR, 70, Delays[_E], Speeds[_E], false) --EQ
-
-	Q:SetAOE(true)
-	W:SetAOE(true)
-
-	DLib:RegisterDamageSource(_Q, _MAGIC, 30, 40, _MAGIC, _AP, 0.60, function() return (player:CanUseSpell(_Q) == READY) end)--Without the 15% increase at rank 5
-	DLib:RegisterDamageSource(_W, _MAGIC, 40, 40, _MAGIC, _AP, 0.70, function() return (player:CanUseSpell(_W) == READY) end)
-	DLib:RegisterDamageSource(_E, _MAGIC, 25, 45, _MAGIC, _AP, 0.4, function() return (player:CanUseSpell(_E) == READY) end)--70 / 115 / 160 / 205 / 250 (+ 40% AP)
-	DLib:RegisterDamageSource(_R, _MAGIC, 45, 45, _MAGIC, _AP, 0.2, function() return (player:CanUseSpell(_R) == READY) end)--1 sphere
-
 	Menu = scriptConfig("Syndra", "Syndra")
 
 	Menu:addSubMenu("Orbwalking", "Orbwalking")
@@ -113,7 +79,24 @@ function OnLoad()
 
 	Menu:addSubMenu("Target selector", "STS")
 		STS:AddToMenu(Menu.STS)
-
+--[[
+	Menu:addSubMenu("Spell Settings", "SPS")
+		Menu.SPS:addSubMenu("Q", "Q")
+			Menu.SPS.Q:addParam("predType", "Prediction type", SCRIPT_PARAM_LIST, 1, {"vPrediction", "Prodiction"})
+			Menu.SPS.Q:addParam("packetCast", "Use packets", SCRIPT_PARAM_ONOFF, VIP_USER)
+		Menu.SPS:addSubMenu("W", "W")
+			Menu.SPS.W:addParam("predType", "Prediction type", SCRIPT_PARAM_LIST, 1, {"vPrediction", "Prodiction"})
+			Menu.SPS.W:addParam("packetCast", "Use packets", SCRIPT_PARAM_ONOFF, false)
+		Menu.SPS:addSubMenu("E", "E")
+			Menu.SPS.E:addParam("predType", "Prediction type", SCRIPT_PARAM_LIST, 1, {"vPrediction", "Prodiction"})
+			Menu.SPS.E:addParam("packetCast", "Use packets", SCRIPT_PARAM_ONOFF, VIP_USER)
+		Menu.SPS:addSubMenu("EQ", "EQ")
+			Menu.SPS.EQ:addParam("predType", "Prediction type", SCRIPT_PARAM_LIST, 1, {"vPrediction", "Prodiction"})
+			Menu.SPS.EQ:addParam("packetCast", "Use packets", SCRIPT_PARAM_ONOFF, VIP_USER)
+		Menu.SPS:addSubMenu("R", "R")
+			--Menu.SPS.R:addParam("predType", "Prediction type", SCRIPT_PARAM_LIST, 1, {"vPrediction", "Prodiction"})
+			Menu.SPS.R:addParam("packetCast", "Use packets", SCRIPT_PARAM_ONOFF, VIP_USER)
+]]
 	Menu:addSubMenu("Combo", "Combo")
 		Menu.Combo:addParam("UseQ", "Use Q", SCRIPT_PARAM_ONOFF, true)
 		Menu.Combo:addParam("UseW", "Use W", SCRIPT_PARAM_ONOFF, true)
@@ -149,7 +132,7 @@ function OnLoad()
 
 	Menu:addSubMenu("EQ combo settings", "EQ")
 		Menu.EQ:addParam("Order",  "Combo mode", SCRIPT_PARAM_LIST, 1, {"E -> Q" , "Q - > E"})
-		Menu.EQ:addParam("Range", "Place Q at range:", SCRIPT_PARAM_SLICE, 700, 0, Q.range)
+		Menu.EQ:addParam("Range", "Place Q at range:", SCRIPT_PARAM_SLICE, 700, 0, Ranges[_Q])
 
 	Menu:addSubMenu("Ultimate", "R")
 		Menu.R:addSubMenu("Don't use R on", "Targets")
@@ -189,6 +172,45 @@ function OnLoad()
 	--[[Predicted damage on healthbars]]
 	DLib:AddToMenu(Menu.Drawings, MainCombo)
 
+	
+	Q = Spell(_Q, Ranges[_Q], VIP_USER)
+	W = Spell(_W, Ranges[_W], false)
+	W2 = Spell(_W, Ranges[_W], false) 
+	E = Spell(_E, Ranges[_E], false)
+	EQ = Spell(_E, Ranges[_E], false)
+	R = Spell(_R, Ranges[_R], VIP_USER)
+	if VIP_USER then
+		Q:TrackCasting("SyndraQ")
+		Q:RegisterCastCallback(OnCastQ)
+		
+		W:TrackCasting("SyndraW")
+		W:RegisterCastCallback(function() end)
+		
+		W2:TrackCasting("syndrawcast")
+		W2:RegisterCastCallback(OnCastW)
+		
+		E:TrackCasting({"SyndraE", "syndrae5"})
+		E:RegisterCastCallback(OnCastE)
+	else
+		WTrack = false
+		--RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"}
+	end
+
+	Q:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_Q], Delays[_Q], Speeds[_Q], false)
+	W:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_W], Delays[_W], Speeds[_W], false)
+	W2:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_W], Delays[_W], Speeds[_W], false)
+	E:SetSkillshot(VP, SKILLSHOT_CONE, Widths[_E], Delays[_E], Speeds[_E], false) --E
+	EQ:SetSkillshot(VP, SKILLSHOT_LINEAR, 70, Delays[_E], Speeds[_E], false) --EQ
+
+	Q:SetAOE(true)
+	W:SetAOE(true)
+
+	DLib:RegisterDamageSource(_Q, _MAGIC, 30, 40, _MAGIC, _AP, 0.60, function() return (player:CanUseSpell(_Q) == READY) end)--Without the 15% increase at rank 5
+	DLib:RegisterDamageSource(_W, _MAGIC, 40, 40, _MAGIC, _AP, 0.70, function() return (player:CanUseSpell(_W) == READY) end)
+	DLib:RegisterDamageSource(_E, _MAGIC, 25, 45, _MAGIC, _AP, 0.4, function() return (player:CanUseSpell(_E) == READY) end)--70 / 115 / 160 / 205 / 250 (+ 40% AP)
+	DLib:RegisterDamageSource(_R, _MAGIC, 45, 45, _MAGIC, _AP, 0.2, function() return (player:CanUseSpell(_R) == READY) end)--1 sphere
+
+	
 	EnemyMinions = minionManager(MINION_ENEMY, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
 	JungleMinions = minionManager(MINION_JUNGLE, QERange, myHero, MINION_SORT_MAXHEALTH_DEC)
 	PosiblePets = minionManager(MINION_OTHER, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
@@ -546,12 +568,13 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	if UseQ then
 		if Qtarget and os.clock() - W:GetLastCastTime() > 0.25 and os.clock() - E:GetLastCastTime() > 0.25 then
 			VP.ShotAtMaxRange = true
-			local QtargetPos, hitchance = VP:GetCircularAOECastPosition(Qtarget, Delays[_Q], Widths[_Q], Ranges[_Q], (Speeds[_Q]*tonumber(Menu.Misc.PRQ)), myHero)
-			if hitchance >=2 then
+			--local QtargetPos, hitchance = VP:GetCircularAOECastPosition(Qtarget, Delays[_Q], Widths[_Q], Ranges[_Q], (Speeds[_Q]*tonumber(Menu.Misc.PRQ)), myHero)
+			local QtargetPos, hitchance = Q:GetPrediction(Qtarget)
+			--if hitchance >=2 then
 				Q:Cast(QtargetPos.x, QtargetPos.z)
 				DrawPrediction = QtargetPos
 				if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
-			end
+			--end
 			VP.ShotAtMaxRange = false
 		end
 	end
@@ -829,7 +852,20 @@ function OnTick()
 	DLib.combo = GetCombo()
 	UpdateSpellData()--update the spells data
 	DrawEQIndicators = false
-
+	--[[
+	--Menu.SPS.Q.predType
+	Q:SetPredictionType(Menu.SPS.Q.predType)
+	W:SetPredictionType(Menu.SPS.W.predType)
+	E:SetPredictionType(Menu.SPS.E.predType)
+	EQ:SetPredictionType(Menu.SPS.EQ.predType)
+	
+	--Q.packetCast
+	Q.packetCast = Menu.SPS.Q.packetCast
+	W.packetCast = Menu.SPS.W.packetCast
+	E.packetCast = Menu.SPS.E.packetCast
+	EQ.packetCast = Menu.SPS.EQ.packetCast
+	R.packetCast = Menu.SPS.R.packetCast
+	]]
 	--Menu.Debug.DebugW = WTrack or W.status
 	--if WTrack == 1 then PrintChat("OLOLOLO") end
 	if os.clock() - W:GetLastCastTime() > 1 and not W:IsReady() then
