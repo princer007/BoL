@@ -1,11 +1,16 @@
 if myHero.charName ~= "Ziggs" then return end
 
-local version = 0.81
+local version = 0.90
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Ziggs"
 --[[
 TODO list
-Бросать самого далёкого от всех в ульте к bestPredPos и пересчет
+Бросать самого далёкого от всех в ульте к bestPredPos и пересчет //А может ну нах? Так впадлу!
+Преды... //DONE?
+Логика ульты //ну я хз даже чего сюда влепить...
+Force ultimate cast. //А вот эта пимпа должна работать. Вроде пофикшено. Всё равно бросит куда лучше...
+TS - Мыш, чемп, дистанция, первейшие //Ну тип привет
+Не интерраптить ульт умершего картуса //Ульт? Упорот? Там вродь на него кастовало ( О_о)
 ???
 PROFIT
 
@@ -34,7 +39,9 @@ if DOWNLOADING_SOURCELIB then PrintChat("Downloading required libraries, please 
 if AUTOUPDATE then
 	 SourceUpdater(SCRIPT_NAME, version, "raw.github.com", "/princer007/BoL/master/"..SCRIPT_NAME..".lua", SCRIPT_PATH .. GetCurrentEnv().FILE_NAME, "/princer007/BoL/master/"..SCRIPT_NAME..".version"):CheckUpdate()
 end
-
+if FileExist(LIB_PATH.."Prodiction.lua") then
+	require("Prodiction")
+end
 local RequireI = Require("SourceLib")
 RequireI:Add("vPrediction", "https://raw.github.com/Hellsing/BoL/master/common/VPrediction.lua")
 RequireI:Add("SOW", "https://raw.github.com/Hellsing/BoL/master/common/SOW.lua")
@@ -64,10 +71,10 @@ _Combo, _Farm, _JungleClear, _Escape,_EscapeTurret, _Interrupter = 1, 2, 3, 4, 5
 _ToMouse, _FromTurret = 0, 1
 
 spellData = {
-    [_Q] = { range = 1400, maxRange=1400, skillshotType = SKILLSHOT_LINEAR,   width = 150,  delay = 0.220, 	 speed = 1550,	  collision = false, maxRangeCollision = true },
-    [_W] = { range = 970,   			  skillshotType = SKILLSHOT_CIRCULAR, width = 225,  delay = 0.250,   speed = 1800,	  collision = false },
-    [_E] = { range = 900,				  skillshotType = SKILLSHOT_CIRCULAR, width = 240,  delay = 0.550,   speed = 2700,    collision = false }, -- width and delay not correct for better hitting
-    [_R] = { range = 5300,				  skillshotType = SKILLSHOT_CIRCULAR, width = 500,  delay = 1.014,   speed = 1850,	  collision = false },
+    [_Q] = { range = 1400, maxRange=1400, skillshotType = SKILLSHOT_LINEAR,   width = 155,  delay = 0.5, 	 speed = 1750,	  collision = false, maxRangeCollision = true },
+    [_W] = { range = 970,   			  skillshotType = SKILLSHOT_CIRCULAR, width = 275,  delay = 0.250,   speed = 1800,	  collision = false },
+    [_E] = { range = 900,				  skillshotType = SKILLSHOT_CIRCULAR, width = 235,  delay = 0.700,   speed = 2700,    collision = false }, -- width and delay not correct for better hitting
+    [_R] = { range = 5300,				  skillshotType = SKILLSHOT_CIRCULAR, width = 525,  delay = 1.014,   speed = 1750,	  collision = false },
 }
 local EnemyMinions = minionManager(MINION_ENEMY, spellData[_Q].range, myHero, MINION_SORT_MAXHEALTH_DEC)
 local JungleMinions = minionManager(MINION_JUNGLE, spellData[_Q].range, myHero, MINION_SORT_MAXHEALTH_DEC)
@@ -78,10 +85,10 @@ function OnLoad()
 	DLib = DamageLib()
 	DManager = DrawManager()
 
-	Q = Spell(_Q, spellData[_Q].range, false)
-	W = Spell(_W, spellData[_W].range, false)
-	E = Spell(_E, spellData[_E].range, false)
-	R = Spell(_R, spellData[_R].range, false)
+	Q = Spell(_Q, spellData[_Q].range, VIP_USER)
+	W = Spell(_W, spellData[_W].range, VIP_USER)
+	E = Spell(_E, spellData[_E].range, VIP_USER)
+	R = Spell(_R, spellData[_R].range, VIP_USER)
 	
 	Q:SetSkillshot(VP, SKILLSHOT_LINEAR,   spellData[_Q].width, spellData[_Q].delay, spellData[_Q].speed, spellData[_Q].collision)
 	W:SetSkillshot(VP, SKILLSHOT_CIRCULAR, spellData[_W].width, spellData[_W].delay, spellData[_W].speed, spellData[_W].collision)
@@ -143,6 +150,8 @@ function OnLoad()
 
 	Menu:addSubMenu("Ultimate", "R")
 		Menu.R:addParam("RNum", "Use R if it will hit(combo): ", SCRIPT_PARAM_LIST, 1, { "No", "1 target", "2 targets", "3 targets", "4 targets", "5 targets" })
+		Menu.R:addParam("Rmode", "Cast mode", SCRIPT_PARAM_LIST, 1, { "Cast to first best position", "Cast to best position near mouse", "Cast to best position near hero"})
+		Menu.R:addParam("Rdist", "Distance from pos to place", SCRIPT_PARAM_SLICE, 700, 700, 2000)
 		Menu.R:addParam("CastR", "Force ultimate cast", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("T"))
 		Menu.R:addParam("CastRsel", "Cast R on selected target(combo)", SCRIPT_PARAM_ONOFF, true)
 		Menu.R:addParam("CastRtokill", "Cast R only when target is killable", SCRIPT_PARAM_ONOFF, false)
@@ -162,6 +171,8 @@ function OnLoad()
 		DManager:CreateCircle(myHero,  spellData[_R].range, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, "R Range", true, true, true)
 		--[[Predicted damage on healthbars]]
 		DLib:AddToMenu(Menu.Drawings, MainCombo)
+	Menu:addSubMenu("Debug", "Debug")
+		Menu.Debug:addParam("DebugQ", "Draw Q prediction", SCRIPT_PARAM_ONOFF, false)
 end
 function OnInterruptSpell(unit, spell)
 	if (GetDistance(unit, myHero) <= (spellData[_W].range+30+spellData[_W].width)) then
@@ -184,7 +195,14 @@ function OnDeleteObj(obj)
 		Wmode = nil
 	end
 end
-
+local DrawPrediction = nil
+function OnDraw()
+	if DrawPrediction ~= nil and Menu.Debug.DebugQ then
+		DrawCircle(DrawPrediction.x, DrawPrediction.y, DrawPrediction.z, 100, RGB(255, 111, 111))--sorry for colorblind people D:
+	end
+	--DrawCircle(myHero.x, myHero.y, myHero.z, spellData[_R].width, RGB(255, 111, 111))--sorry for colorblind people D:
+	DrawPrediction = nil
+end
 function Combo()
 	local Qtarget = STS:GetTarget(spellData[_Q].range)
 	local Wtarget = STS:GetTarget(spellData[_W].range)
@@ -202,7 +220,8 @@ function Combo()
 	
 	if Qtarget and Q:IsReady() and Menu.Combo.UseQ then
 		Cpos, hitchance = Q:GetPrediction(Qtarget)
-		if hitchance > 1 then
+		if hitchance and hitchance > 1 then
+			DrawPrediction = Cpos
 			Q:Cast(Cpos.x, Cpos.z)
 		end
 	end
@@ -219,30 +238,14 @@ function Combo()
 			end
 		else
 			local EtargetPos, hitchance = E:GetPrediction(Etarget)
-			if hitchance > 1 then
+			if hitchance and hitchance > 1 then
 				E:Cast(EtargetPos.x, EtargetPos.z)
 			end
 		end
 	end
-
 	local IgniteTarget = STS:GetTarget(600)
 	if IgniteTarget and DLib:IsKillable(Rtarget, MainCombo) and _IGNITE~=nil and Menu.Misc.UseIgnite then
 		CastSpell(_IGNITE, IgniteTarget)
-	end
-	--PrintChat(tostring(DLib:IsKillable(SelectedTarget, {_R})))
-	if Menu.R.CastRsel and SelectedTarget ~= nil and ValidTarget(SelectedTarget, spellData[_R].range) and R:IsReady() and castR then
-		Cpos, hitchance = R:GetPrediction(SelectedTarget)
-		PrintChat("Ready to cast ulti, hit chance: "..hitchance.." target: "..SelectedTarget.name)
-		if hitchance > 1 then
-			R:Cast(Cpos.x, Cpos.z)
-			SelectedTarget = nil
-		end
-	elseif NCounter > 1 and R:IsReady() then
-		local preds = GetPredictedPositionsTable(VP, GetEnemyHeroes(), spellData[_R].delay, spellData[_R].width, spellData[_R].range, spellData[_R].speed, myHero, false)
-		local BestPos, BestHit = GetBestCircularFarmPosition(spellData[_R].range, spellData[_R].width, preds)
-		if BestHit >= NCounter-1 then
-			R:Cast(BestPos.x, BestPos.z)
-		end		
 	end
 	if Wtarget and W:IsReady() and (((os.clock() - R:GetLastCastTime()) >= 2 and not R:IsReady()) or not castR) and Menu.Combo.UseW and (os.clock()-E:GetLastCastTime()) > 1 then
 		if Menu.Misc.GETOVERHERE then
@@ -260,6 +263,30 @@ function Combo()
 			W:Cast(Wtarget)
 			Wmode = _Combo
 		end
+	end
+	if Menu.R.CastRsel and SelectedTarget ~= nil and ValidTarget(SelectedTarget, spellData[_R].range) and R:IsReady() and castR and not Menu.R.CastR then
+		Cpos, hitchance = R:GetPrediction(SelectedTarget)
+		--PrintChat("Ready to cast ulti, hit chance: "..hitchance.." target: "..SelectedTarget.name)
+		if hitchance and hitchance > 1 then
+			R:Cast(Cpos.x, Cpos.z)
+			SelectedTarget = nil
+		end
+	elseif NCounter > 1 and R:IsReady() then
+		local AVH = {}
+		for i, enemyHero in ipairs(GetEnemyHeroes()) do
+			if enemyHero.bTargetable then table.insert(AVH, enemyHero) end
+		end
+		local preds = GetPredictedPositionsTable(VP, AVH, spellData[_R].delay, spellData[_R].width, spellData[_R].range, spellData[_R].speed, myHero, false)
+		local BestPos, BestHit = GetBestCircularFarmPosition(spellData[_R].range, spellData[_R].width, preds)
+		--Menu.R.Rmode "Cast to first best position", "Cast to best position near mouse", "Cast to best position near hero"})
+		if Menu.R.Rmode == 2 then 
+			if not GetDistance(BestPos, mousePos) <= Menu.R.Rdist then return end
+		elseif Menu.R.Rmode == 3 then 
+			if not GetDistance(BestPos) <= Menu.R.Rdist then return end
+		end
+		if BestHit >= NCounter-1 then
+			R:Cast(BestPos.x, BestPos.z)
+		end		
 	end
 end
 
@@ -376,21 +403,17 @@ function OnTick()
 	if blowW and Wmode == _Escape then
 		W:Cast()
 	end
-	--------
-	--if SelectedTarget ~= nil and SelectedTarget.isDead then SelectedTarget = nil end
-	--------
 	if not Wpos ~= nil then 
 		Wmode = nil 
 	end
 	if blowW and Wmode ~= _Combo and Wmode ~= _Escape then W:Cast() end
 	if Wmode == _EscapeTurret then
 		SOWi:MoveTo(escapePos.x, escapePos.z)
-		--DelayAction(function() W:Cast(pos.x, pos.z) end, 0.1)
 	end
 	SOWi:EnableAttacks()
 	-----------=================
 	if Menu.R.CastR then
-		NCounter = 1
+		NCounter = 2
 	else
 		NCounter = Menu.R.RNum
 	end
