@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.43
+local version = 1.44
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -42,7 +42,7 @@ local _QE = 1337
 local WObject
 --SpellData
 local Ranges = {[_Q] = 800,       [_W] = 920,  [_E] = 700,       [_R] = 675}
-local Widths = {[_Q] = 200,       [_W] = 200,  [_E] = 45 * 0.5,  [_R] = 1,    [_QE] = 60}
+local Widths = {[_Q] = 180,       [_W] = 200,  [_E] = 45 * 0.5,  [_R] = 1,    [_QE] = 60}
 local Delays = {[_Q] = 0.25,      [_W] = 0.5,  [_E] = 0.5,       [_R] = 0.25, [_QE] = 1800} ---_QE delay updates in function of _E delay + Speed and the distance to the ball
 local Speeds = {[_Q] = 3000,	  [_W] = 1450, [_E] = 2500,      [_R] = 1100, [_QE] = 1600}
 local FocusJungleNames = {"GiantWolf8.1.1","AncientGolem7.1.1","Wraith9.1.1","LizardElder10.1.1","Golem11.1.2","GiantWolf2.1.1","AncientGolem1.1.1",
@@ -140,12 +140,13 @@ function OnLoad()
 		Menu.Misc:addParam("MEQ", "Manual E+Q Combo", SCRIPT_PARAM_ONKEYDOWN, false,   string.byte("T"))
 
 	Menu:addSubMenu("Drawings", "Drawings")
-		DManager:CreateCircle(myHero, SOWi:MyRange() + 50, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, "AA Range", true, true, true)
+		DManager:CreateCircle((myHero), SOWi:MyRange() + 50, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, "AA Range", true, true, true)
 		--[[Spell ranges]]
 		for spell, range in pairs(Ranges) do
-			DManager:CreateCircle(myHero, range, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, SpellToString(spell).." Range", true, true, true)
+			DManager:CreateCircle((myHero), range, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, SpellToString(spell).." Range", true, true, true)
 		end
-		DManager:CreateCircle(myHero, QERange, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, "Q+E Range", true, true, true)
+		DManager:CreateCircle((myHero), QERange, 1, {255, 255, 255, 255}):AddToMenu(Menu.Drawings, "Q+E Range", true, true, true)
+		
 	Menu:addSubMenu("Debug", "Debug")
 		Menu.Debug:addParam("DebugBall",  "Track balls", SCRIPT_PARAM_ONOFF, false)
 		Menu.Debug:addParam("DebugCast",  "Cast output", SCRIPT_PARAM_ONOFF, false)
@@ -412,14 +413,19 @@ function OnInterruptSpell(unit, spell)
 	if GetDistanceSqr(unit.visionPos, myHero.visionPos) < E.rangeSqr and E:IsReady() then
 		
 		if Q:IsReady() then
-			StartEQCombo(unit, false)
+			if unit.charName ~= "Warwick" then StartEQCombo(unit, false)
+			else StartEQCombo(spell.endPos, false) end
+			if Menu.Debug.DebugCast then PrintChat("Interrupt, EQ to unit pos") end
 		else
-			E:Cast(unit.visionPos.x, unit.visionPos.z)
-			if Menu.Debug.DebugCast then PrintChat("Interrupt, E to cast pos") end
+			if unit.charName ~= "Warwick" then E:Cast(unit.visionPos.x, unit.visionPos.z)
+			else E:Cast(spell.endPos.x, spell.endPos.z) end
+			if Menu.Debug.DebugCast then PrintChat("Interrupt, E to unit pos") end
 		end
 
 	elseif GetDistanceSqr(unit.visionPos,  myHero.visionPos) < QERange * QERange and Q:IsReady() and E:IsReady() then
-		StartEQCombo(unit)
+		if unit.charName ~= "Warwick" then StartEQCombo(unit)
+		else StartEQCombo(spell.endPos) end
+		if Menu.Debug.DebugCast then PrintChat("Interrupt, EQ to unit pos") end
 	end 
 end
 
@@ -551,6 +557,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	if UseQ then
 		if Qtarget and os.clock() - W:GetLastCastTime() > 0.25 and os.clock() - E:GetLastCastTime() > 0.25 then
 			VP.ShotAtMaxRange = true
+			Q.speed = (Speeds[_Q]*tonumber(Menu.Misc.PRQ))
 			--local QtargetPos, hitchance = VP:GetCircularAOECastPosition(Qtarget, Delays[_Q], Widths[_Q], Ranges[_Q], (Speeds[_Q]*tonumber(Menu.Misc.PRQ)), myHero)
 			local QtargetPos, hitchance = Q:GetPrediction(Qtarget)
 			if QtargetPos and hitchance and hitchance>=2 then
@@ -558,6 +565,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 				DrawPrediction = QtargetPos
 				if Menu.Debug.DebugCast then PrintChat("Cast Q on target in combo") end
 			end
+			Q.speed = Speeds[_Q]
 			VP.ShotAtMaxRange = false
 		end
 	end
