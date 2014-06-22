@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.42
+local version = 1.43
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -26,7 +26,7 @@ end
 local RequireI = Require("SourceLib")
 RequireI:Add("vPrediction", "https://raw.github.com/Hellsing/BoL/master/common/VPrediction.lua")
 RequireI:Add("SOW", "https://raw.github.com/Hellsing/BoL/master/common/SOW.lua")
-if FileExist(LIB_PATH.."Prodiction.lua") then
+if VIP_USER and FileExist(LIB_PATH.."Prodiction.lua") then
 	require("Prodiction")
 end
 RequireI:Check()
