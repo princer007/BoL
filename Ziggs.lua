@@ -1,6 +1,6 @@
 if myHero.charName ~= "Ziggs" then return end
 
-local version = 0.90
+local version = 0.91
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Ziggs"
 --[[
@@ -39,7 +39,7 @@ if DOWNLOADING_SOURCELIB then PrintChat("Downloading required libraries, please 
 if AUTOUPDATE then
 	 SourceUpdater(SCRIPT_NAME, version, "raw.github.com", "/princer007/BoL/master/"..SCRIPT_NAME..".lua", SCRIPT_PATH .. GetCurrentEnv().FILE_NAME, "/princer007/BoL/master/"..SCRIPT_NAME..".version"):CheckUpdate()
 end
-if FileExist(LIB_PATH.."Prodiction.lua") then
+if VIP_USER and FileExist(LIB_PATH.."Prodiction.lua") then
 	require("Prodiction")
 end
 local RequireI = Require("SourceLib")
