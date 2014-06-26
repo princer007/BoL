@@ -8,7 +8,7 @@ Include screenshot and describing of error(what were you doing when it appear)
 ]]
 if myHero.charName ~= "Orianna" then return end
 
-local version = 1.190
+local version = 1.21
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Orianna"
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -25,6 +25,9 @@ else
 	DownloadFile(SOURCELIB_URL, SOURCELIB_PATH, function() PrintChat("Required libraries downloaded successfully, please reload") end)
 end
 
+if FileExist(LIB_PATH.."Prodiction.lua") then
+	require("Prodiction")
+end
 if DOWNLOADING_SOURCELIB then PrintChat("Downloading required libraries, please wait...") return end
 
 if AUTOUPDATE then
@@ -76,13 +79,13 @@ local InitiatorsList =
 
 --[[Spell data]]
 spellData = {
-    [_Q] = { range = 800,  skillshotType = SKILLSHOT_LINEAR,   width = 90,  delay = 0, 	   speed = 1800,	  collision = false },
-    [_W] = { range = 0,    skillshotType = SKILLSHOT_CIRCULAR, width = 250, delay = 0.25,  speed = math.huge, collision = false },
-    [_E] = { range = 1000, skillshotType = SKILLSHOT_LINEAR,   width = 60,  delay = 0.25,  speed = 1400,      collision = true  },
-    [_R] = { range = 0,	   skillshotType = SKILLSHOT_CIRCULAR, width = 400, delay = 0.5,   speed = math.huge, collision = false },
+    [_Q] = { range = 815,  skillshotType = SKILLSHOT_LINEAR,   width = 145,  delay = 0.5,  speed = 1800,	  collision = false },
+    [_W] = { range = 0,    skillshotType = SKILLSHOT_CIRCULAR, width = 260, delay = 0.5,   speed = math.huge, collision = false },
+    [_E] = { range = 1095, skillshotType = SKILLSHOT_LINEAR,   width = 145,  delay = 0.5,  speed = 1400,      collision = true  },
+    [_R] = { range = 0,	   skillshotType = SKILLSHOT_CIRCULAR, width = 425, delay = 0.5,   speed = math.huge, collision = false },
 }
 ------------------------------------------------------------------------------------------------
-local MainCombo = {_Q, _W, _R, _Q, _IGNITE}
+local MainCombo = {_AA, _Q, _W, _R, _IGNITE}
 local Far = 1.3
 
 local DrawPrediction = nil
@@ -117,10 +120,10 @@ function OnLoad()
 	Menu = scriptConfig("Orianna", "Orianna")
 	BallPos = myHero
 	--[[Spells]]
-	spellQ = Spell(_Q, spellData[_Q].range, false)
-	spellW = Spell(_W, spellData[_W].range, false)
-	spellE = Spell(_E, spellData[_E].range, false)
-	spellR = Spell(_R, spellData[_R].range, false)
+	spellQ = Spell(_Q, spellData[_Q].range, VIP_USER)
+	spellW = Spell(_W, spellData[_W].range, VIP_USER)
+	spellE = Spell(_E, spellData[_E].range, VIP_USER)
+	spellR = Spell(_R, spellData[_R].range, VIP_USER)
 	--[[Combo]]
 
 	VP = VPrediction()
@@ -146,8 +149,9 @@ function OnLoad()
 		Menu.Misc:addParam("UseW", "Auto-W if it will hit", SCRIPT_PARAM_LIST, 1, { "No", ">0 targets", ">1 targets", ">2 targets", ">3 targets", ">4 targets" })
 		Menu.Misc:addParam("UseR", "Auto-ultimate if it will hit", SCRIPT_PARAM_LIST, 1, { "No", ">0 targets", ">1 targets", ">2 targets", ">3 targets", ">4 targets" })
 		Menu.Misc:addParam("EQ", "Use E + Q if tEQ < %x * tQ", SCRIPT_PARAM_SLICE, 100, 0, 200)
+		if VIP_USER then Menu.Misc:addParam("BlockR", "Block R if it is not going to hit", SCRIPT_PARAM_ONOFF, true) end
 		Menu.Misc:addParam("PaR", "Cast R if hit 1 enemy in combo(hold)", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("J"))
-		Menu.Misc:addParam("AARange", "NOT CONFIGURABLE", SCRIPT_PARAM_SLICE, 300, 300, 300)
+		--Menu.Misc:addParam("AARange", "NOT CONFIGURABLE", SCRIPT_PARAM_SLICE, 300, 300, 300)
 		Menu.Misc:addSubMenu("Auto-E on initiators", "AutoEInitiate")
 		local added = false
 		for champion, spell in pairs(InitiatorsList) do
@@ -166,7 +170,6 @@ function OnLoad()
 		end
 		Menu.Misc:addSubMenu("Auto-Interrupt", "Interrupt")
 			Interrupter(Menu.Misc.Interrupt, OnInterruptSpell)
-		--Menu.Misc:addParam("BlockR", "Block R if it is not going to hit", SCRIPT_PARAM_ONOFF, true)
 
 	--[[Harassing]]
 	Menu:addSubMenu("Harass", "Harass")
@@ -230,7 +233,17 @@ function OnLoad()
 	end
 	PrintChat("<font color=\"#81BEF7\">[Orianna] Command: Load</font>")
 end
-
+function OnSendPacket(p)
+	if Menu.Misc.BlockR and p.header == Packet.headers.S_CAST then
+		local packet = Packet(p)
+		if packet:get('spellId') == _R then
+			local hitnumber, hit = CheckEnemiesHitByR()
+			if hitnumber == 0 then
+				p:Block()
+			end
+		end
+	end
+end
 --[[Check the number of enemies hit by casting W]]
 function CheckEnemiesHitByW()
 	local enemieshit = {}
@@ -276,7 +289,7 @@ function CastQ(target, fast)
 	local Speed = spellData[_Q].speed
 	local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(target, spellData[_Q].delay, spellData[_Q].width, spellData[_Q].range, Speed, BallPos)
 	local CastPoint = CastPosition
-	if (HitChance < 2) then return end
+	if HitChance and (HitChance < 2) then return end
 	DrawPrediction = CastPoint
 
 	if GetDistance(myHero.visionPos, Position) > spellData[_Q].range + spellData[_W].width + VP:GetHitBox(target) then
@@ -284,7 +297,7 @@ function CastQ(target, fast)
 		if target2 then
 			CastPosition,  HitChance,  Position = VP:GetLineCastPosition(target2, spellData[_Q].delay, spellData[_Q].width, spellData[_Q].range, Speed, BallPos)
 			CastPoint = CastPosition
-	DrawPrediction = CastPoint
+			DrawPrediction = CastPoint
 		else
 			do return end
 		end
@@ -572,8 +585,9 @@ function OnTickChecks()
 		for i, unit in ipairs(GetAllyHeroes()) do
 			if GetDistance(unit) < spellData[_E].range then
 				for champion, spell in pairs(InitiatorsList) do
-					if LastChampionSpell[unit.networkID] and LastChampionSpell[unit.networkID].name ~=nil and Menu.Misc.AutoEInitiate[champion.. LastChampionSpell[unit.networkID].name] and (os.clock() - LastChampionSpell[unit.networkID].time < 1.5) then
-						spellE:Cast(Unit)
+					if LastChampionSpell[unit.networkID] and LastChampionSpell[unit.networkID].name ~=nil and Menu.Misc.AutoEInitiate[champion..LastChampionSpell[unit.networkID].name] and (os.clock() - LastChampionSpell[unit.networkID].time < 1.5) then
+						PrintChat(tostring(LastChampionSpell[unit.networkID].name))
+						CastE(unit)
 					end
 				end
 			end
@@ -840,7 +854,11 @@ end
 function OnInterruptSpell(unit, spell)
 	if GetDistanceSqr(unit.visionPos, myHero.visionPos) < (spellData[_Q].range^2+(spellData[_R].width^2)) and spellR:IsReady() then
 		if spellQ:IsReady() then
-			spellQ:Cast(unit.visionPos.x, unit.visionPos.z)
+			if unit.charName ~= "Warwick" then 
+				spellQ:Cast(unit.visionPos.x, unit.visionPos.z)
+			else
+				spellQ:Cast(spell.endPos.x, spell.endPos.z)
+			end
 		else
 			if not BallMoving then
 				spellR:Cast()
