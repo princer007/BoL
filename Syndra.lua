@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.44
+local version = 1.47
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -130,6 +130,8 @@ function OnLoad()
 			Menu.Misc:addParam("WPet",  "Auto grab pets using W", SCRIPT_PARAM_ONOFF, true)
 		end
 		Menu.Misc:addParam("PRQ", "Prediction sensitivity(Q)", SCRIPT_PARAM_SLICE, 2, 1, 4)
+		
+		Menu.Misc:addParam("Whitchance", "W min hitchance(1 - insta cast)", SCRIPT_PARAM_SLICE, 1, 1, 2)
 
 		Menu.Misc:addSubMenu("Auto-Interrupt", "Interrupt")
 			Interrupter(Menu.Misc.Interrupt, OnInterruptSpell)
@@ -188,7 +190,7 @@ function OnLoad()
 
 	Q:SetAOE(true)
 	W:SetAOE(true)
-
+	
 	DLib:RegisterDamageSource(_Q, _MAGIC, 30, 40, _MAGIC, _AP, 0.60, function() return (player:CanUseSpell(_Q) == READY) end)--Without the 15% increase at rank 5
 	DLib:RegisterDamageSource(_W, _MAGIC, 40, 40, _MAGIC, _AP, 0.70, function() return (player:CanUseSpell(_W) == READY) end)
 	DLib:RegisterDamageSource(_E, _MAGIC, 25, 45, _MAGIC, _AP, 0.4, function() return (player:CanUseSpell(_E) == READY) end)--70 / 115 / 160 / 205 / 250 (+ 40% AP)
@@ -453,13 +455,9 @@ function OnCastQ(spell)
 	EQTarget = nil
 	EQCombo = 0
 end
--- TODO:Prob not work cause of OnCastW not executing after WECombo
+local DPP = nil
 function OnCastW(spell)
-if not VIP_USER then WTrack = 0 end
-	if WECombo ~= 0 then
-		DelayAction(function() E:Cast(spell.endPos.x, spell.endPos.z) end, Delays[_W])
-		WECombo = 0
-	end
+	if not VIP_USER then WTrack = 0 end
 end
 function OnCastWB(spell)
 	WTrack = 1
@@ -545,11 +543,12 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 			--Update the EQ speed and the range
 			EQ.delay = Q.range / E.speed + E.delay 
 			local QEtargetPos, Hitchance, Position = EQ:GetPrediction(QEtarget)
-			local pos = Vector(myHero.visionPos) + Q.range * (Vector(QEtargetPos) - Vector(myHero.visionPos)):normalized()
-			if QEtargetPos and GetDistance(QEtargetPos, pos) <= (-0.6 * Q.range + 966) then
+			local pos = Vector(myHero.visionPos) + W.range * (Vector(QEtargetPos) - Vector(myHero.visionPos)):normalized()
+			if QEtargetPos and GetDistance(QEtargetPos, pos) <= (-0.6 * W.range + 966) then
 				WECombo = os.clock()
 				if Menu.Debug.DebugCast then PrintChat("Throw ball in WE combo") end
 				W:Cast(pos.x, pos.z)
+				DelayAction(function() E:Cast(pos.x, pos.z) end, Delays[_W])
 			end
 		end
 	end
@@ -740,11 +739,11 @@ function JungleFarm()
 	local CloseMinion = CloseMinions[1]
 	local FarMinion = AllMinions[1]
 	if not CloseMinion and os.clock()-Q:GetLastCastTime()>0.5 then 
-		W:Cast(myHero.x, myHero.z)
+		W:__Cast(myHero.x, myHero.z)
 	end
 	
 	if WStatus == "JungleSteal" then
-		W:Cast(myHero.x, myHero.z)
+		W:__Cast(myHero.x, myHero.z)
 		WStatus = nil
 	end
 	if ValidTarget(CloseMinion) then
@@ -755,13 +754,13 @@ function JungleFarm()
 			SOWi:DisableAttacks()
 			if ValidTarget(selectedTarget) and DLib:IsKillable(selectedTarget, {_W}) and GetDistanceSqr(myHero.visionPos, selectedTarget) <= W.rangeSqr and W:IsReady() then
 				if WStatus == nil then
-					W:Cast(selectedTarget.x, selectedTarget.z)
+					W:__Cast(selectedTarget.x, selectedTarget.z)
 					WStatus = "JungleSteal"
 				end
 			end
 		else
 			if UseQ and Q:IsReady() then
-				Q:Cast(CloseMinion)
+				Q:__Cast(CloseMinion)
 			end
 			if UseW then
 				local targetBall = nil
@@ -770,7 +769,7 @@ function JungleFarm()
 					targetBall = ball
 				end
 				if (os.clock()-Q:GetLastCastTime() > Q.delay+0.1) and WStatus == nil and targetBall ~= nil then
-					DelayAction(function() return W:Cast(targetBall.object.x, targetBall.object.z) end, 0.1)
+					DelayAction(function() return W:__Cast(targetBall.object.x, targetBall.object.z) end, 0.1)
 					--W:Cast(targetBall.object.x, targetBall.object.z)
 					WStatus = "HaveBall"
 				elseif WStatus == "HaveBall" then
@@ -788,20 +787,20 @@ function JungleFarm()
 					end
 					----=== Finished
 					WStatus = nil
-					W:Cast(ValidMinion.x, ValidMinion.z)
+					W:__Cast(ValidMinion.x, ValidMinion.z)
 					--W:Cast(myHero.x, myHero.z)
 				end
 			end
 				
 
 			if UseE and os.clock() - Q:GetLastCastTime() > 1 then
-				E:Cast(CloseMinion)
+				E:__Cast(CloseMinion)
 			end
 		end
 	elseif ValidTarget(FarMinion) and GetDistanceSqr(FarMinion) <= (Q.range + 588)^2 and GetDistanceSqr(FarMinion) > Q.rangeSqr and DLib:IsKillable(FarMinion, {_E}) then
 		if Q:IsReady() and E:IsReady() then
 			local QPos = Vector(myHero.visionPos) + Q.range * (Vector(FarMinion) - Vector(myHero)):normalized()
-			Q:Cast(QPos.x, QPos.z)
+			Q:__Cast(QPos.x, QPos.z)
 			QECombo = os.clock()
 		end
 	end	
@@ -846,6 +845,7 @@ function OnTick()
 	W.packetCast = false
 	--Menu.Debug.DebugW = WTrack or W.status
 	--if WTrack == 1 then PrintChat("OLOLOLO") end
+	W:SetHitChance(Menu.Misc.Whitchance)
 	if os.clock() - W:GetLastCastTime() > 1 and not W:IsReady() then
 		WStatus = nil
 	end
@@ -920,7 +920,9 @@ end
 myHero.barData = {PercentageOffset = {x = 0, y = 0}}
 
 function OnDraw()
-	if Menu.Debug.DebugBall == 2 then
+	if DPP ~= nil then DrawCircle3D(DPP.x, myHero.y, DPP.z, 40, 3, ARGB(255, 255, 0, 111), 20) end
+	
+	if Menu.Debug.DebugBall then
 		BTOnDraw()
 	end
 	if DrawEQIndicators then
