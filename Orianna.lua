@@ -8,7 +8,7 @@ Include screenshot and describing of error(what were you doing when it appear)
 ]]
 if myHero.charName ~= "Orianna" then return end
 
-local version = 1.21
+local version = 1.22
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Orianna"
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ else
 	DownloadFile(SOURCELIB_URL, SOURCELIB_PATH, function() PrintChat("Required libraries downloaded successfully, please reload") end)
 end
 
-if VIP_USER and FileExist(LIB_PATH.."Prodiction.lua") then
+if FileExist(LIB_PATH.."Prodiction.lua") then
 	require("Prodiction")
 end
 if DOWNLOADING_SOURCELIB then PrintChat("Downloading required libraries, please wait...") return end
@@ -657,7 +657,7 @@ function Combo(target)
 		end
     -- TODO: Single target / team fight checks
     if SINGLE_TARGET then
-        if target and ((GetDistanceSqr(target) > tonumber(Menu.Misc.AARange)^2) or ((player.health/player.maxHealth <= 0.25) and (player.health/player.maxHealth < target.health/target.maxHealth))) then
+        if target and ((GetDistanceSqr(target) > 300^2) or ((player.health/player.maxHealth <= 0.25) and (player.health/player.maxHealth < target.health/target.maxHealth))) then
             SOWi:DisableAttacks()
 		end
 
@@ -691,7 +691,7 @@ function Combo(target)
         end
     else
         for i, enemy in ipairs(GetEnemyHeroes()) do
-            if ValidTarget(enemy) and (GetDistanceSqr(enemy) < tonumber(Menu.Misc.AARange)^2) and (player.health/player.maxHealth <= 0.25) then
+            if ValidTarget(enemy) and (GetDistanceSqr(enemy) < 300^2) and (player.health/player.maxHealth <= 0.25) then
                 SOWi:DisableAttacks()
             end
         end
@@ -790,7 +790,7 @@ end
 
 function OnDraw()
 	if Menu.Drawing.AADistance then
-		DrawCircle3D(myHero.x, myHero.y, myHero.z, tonumber(Menu.Misc.AARange), 1, ARGB(255, 0, 255, 0), 180)
+		SOW:DrawAARange(2,  ARGB(255, 0, 255, 0))
 	end
 
 	if Menu.Drawing.Qrange then
