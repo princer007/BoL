@@ -25,7 +25,7 @@ else
 	DownloadFile(SOURCELIB_URL, SOURCELIB_PATH, function() PrintChat("Required libraries downloaded successfully, please reload") end)
 end
 
-if FileExist(LIB_PATH.."Prodiction.lua") then
+if VIP_USER and FileExist(LIB_PATH.."Prodiction.lua") then
 	require("Prodiction")
 end
 if DOWNLOADING_SOURCELIB then PrintChat("Downloading required libraries, please wait...") return end
