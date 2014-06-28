@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.47
+local version = 1.48
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -522,7 +522,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 		UseR = false
 	end
 	if UseW then
-		if Wtarget and W.status == 1 and (os.clock() - Q:GetLastCastTime() > 0.25)  then
+		if Wtarget and W.status == 1 then
 			if not VIP_USER then 
 				W:Cast(Wtarget)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on target in combo") end
@@ -531,11 +531,14 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 				W:Cast(Wtarget)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on target in combo") end
 			end
-		elseif Wtarget and W.status == 0 and (os.clock() - E:GetLastCastTime() > 0.7) and (os.clock() - Q:GetLastCastTime() > 0.7) then
+		elseif Wtarget and W.status == 0 then
 			local validball = GetWValidBall()
-			if validball then
+			if validball and validball.object then
+				W:Cast(validball.object.x, validball.object.z)
+				if Menu.Debug.DebugCast then PrintChat("Cast W on ball") end
+			elseif validball then
 				W:Cast(Wtarget)
-				if Menu.Debug.DebugCast then PrintChat("Cast W on target for get ball") end
+				if Menu.Debug.DebugCast then PrintChat("Cast W on target for get W object") end
 			end
 		end
 
@@ -822,6 +825,7 @@ function UpdateSpellData()
 end
 
 function Combo()
+	W:SetHitChance(Menu.Misc.Whitchance)
 	SOWi:DisableAttacks()
 	if not Q:IsReady() and (not W:IsReady() or not E:IsReady()) then
 		SOWi:EnableAttacks()
@@ -836,16 +840,15 @@ end
 
 function OnTick()
 	DrawPrediction = nil
+	W.packetCast = false
 	DrawJungleStealingIndicator = false
 	BTOnTick()
 	SOWi:EnableAttacks()
 	DLib.combo = GetCombo()
 	UpdateSpellData()--update the spells data
 	DrawEQIndicators = false
-	W.packetCast = false
 	--Menu.Debug.DebugW = WTrack or W.status
 	--if WTrack == 1 then PrintChat("OLOLOLO") end
-	W:SetHitChance(Menu.Misc.Whitchance)
 	if os.clock() - W:GetLastCastTime() > 1 and not W:IsReady() then
 		WStatus = nil
 	end
