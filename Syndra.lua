@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.481
+local version = 1.49
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -201,10 +201,10 @@ function OnLoad()
 	JungleMinions = minionManager(MINION_JUNGLE, QERange, myHero, MINION_SORT_MAXHEALTH_DEC)
 	PosiblePets = minionManager(MINION_OTHER, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
 	PrintChat("<font color=\"#6699ff\">Syndra: Loaded")
-	PrintChat("<font color=\"#6699ff\"><b>Syndra: TEMP FIX Don't use it after BoL update.")
+	PrintChat("<font color=\"#6699ff\"><b>Syndra: Ok, temp fix gone. Now it's perma fixed.")
 end
 function OnRecvPacket(p)
-	if p.header == 112 then
+	if p.header == 113 then
 		p.pos = 1
 		local NetworkID = p:DecodeF()
 		local Active = p:Decode1()
