@@ -165,7 +165,7 @@ function OnLoad()
 	E = Spell(_E, Ranges[_E], false)
 	EQ = Spell(_E, Ranges[_E], false)
 	R = Spell(_R, Ranges[_R], VIP_USER)
-	if not VIP_USER then
+	if VIP_USER then
 		Q:TrackCasting("SyndraQ")
 		Q:RegisterCastCallback(OnCastQ)
 		
@@ -200,8 +200,7 @@ function OnLoad()
 	EnemyMinions = minionManager(MINION_ENEMY, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
 	JungleMinions = minionManager(MINION_JUNGLE, QERange, myHero, MINION_SORT_MAXHEALTH_DEC)
 	PosiblePets = minionManager(MINION_OTHER, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
-	PrintChat("<font color=\"#6699ff\">Syndra: Loaded")
-	PrintChat("<font color=\"#6699ff\"><b>Syndra: Ok, temp fix gone. Now it's perma fixed.")
+	PrintChat("Syndra: Loaded")
 end
 function OnRecvPacket(p)
 	if p.header == 113 then
@@ -390,7 +389,7 @@ end
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 function OnProcessSpell(unit, spell)
-if VIP_USER and unit == myHero then
+if not VIP_USER and unit == myHero then
 --RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"} 
 	if spell.name:lower():find("syndraq") then
 		OnCastQ(spell)
@@ -458,7 +457,7 @@ function OnCastQ(spell)
 end
 local DPP = nil
 function OnCastW(spell)
-	if VIP_USER then WTrack = 0 end
+	if not VIP_USER then WTrack = 0 end
 end
 function OnCastWB(spell)
 	WTrack = 1
@@ -524,7 +523,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	end
 	if UseW then
 		if Wtarget and W.status == 1 then
-			if VIP_USER then 
+			if not VIP_USER then 
 				W:Cast(Wtarget)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on target in combo") end
 			end
@@ -552,7 +551,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 				WECombo = os.clock()
 				if Menu.Debug.DebugCast then PrintChat("Throw ball in WE combo") end
 				W:Cast(pos.x, pos.z)
-				DelayAction(function() E:Cast(pos.x, pos.z) end, Delays[_W]+0.1)
+				DelayAction(function() E:Cast(pos.x, pos.z) end, Delays[_W])
 			end
 		end
 	end
@@ -818,7 +817,7 @@ function UpdateSpellData()
 	if R.range ~= (Ranges[_R] + 75) and R:GetLevel() == 5 then
 		R:SetRange(Ranges[_R] + 75)
 	end
-	if not VIP_USER then
+	if VIP_USER then
 		W.status = WObject and 1 or 0
 	else 
 		W.status = WTrack
