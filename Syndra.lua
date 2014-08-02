@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.49
+local version = 1.50
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -32,12 +32,12 @@ end
 RequireI:Check()
 
 if RequireI.downloadNeeded == true then return end
-
+DFGed = {id = 0, stime = 0}
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-local MainCombo = {ItemManager:GetItem("DFG"):GetId(), _Q, _W, _E, _R, _R, _R, _IGNITE}
+local MainCombo = {_Q, _W, _E, _R, _R, _R, _IGNITE}
 local _QE = 1337
 local WObject
 --SpellData
@@ -156,7 +156,8 @@ function OnLoad()
 		--Menu.Debug:addParam("DebugW",  "Debug W state", SCRIPT_PARAM_ONOFF, false)
 		--Menu.Debug:permaShow("DebugW")
 	--[[Predicted damage on healthbars]]
-	DLib:AddToMenu(Menu.Drawings, MainCombo)
+	Menu.Drawings:addParam("DrawPredictedHealth",  "Draw Predicted Health", SCRIPT_PARAM_ONOFF, true)
+	--DLib:AddToMenu(Menu.Drawings, MainCombo)
 
 	
 	Q = Spell(_Q, Ranges[_Q], VIP_USER)
@@ -182,10 +183,10 @@ function OnLoad()
 		--RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"}
 	end
 
-	Q:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_Q], Delays[_Q], Speeds[_Q], false)
-	W:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_W], Delays[_W], Speeds[_W], false)
+	Q:SetSkillshot (VP, SKILLSHOT_CIRCULAR, Widths[_Q], Delays[_Q], Speeds[_Q], false)
+	W:SetSkillshot (VP, SKILLSHOT_CIRCULAR, Widths[_W], Delays[_W], Speeds[_W], false)
 	W2:SetSkillshot(VP, SKILLSHOT_CIRCULAR, Widths[_W], Delays[_W], Speeds[_W], false)
-	E:SetSkillshot(VP, SKILLSHOT_CONE, Widths[_E], Delays[_E], Speeds[_E], false) --E
+	E:SetSkillshot (VP, SKILLSHOT_CONE, Widths[_E], Delays[_E], Speeds[_E], false) --E
 	EQ:SetSkillshot(VP, SKILLSHOT_LINEAR, 70, Delays[_E], Speeds[_E], false) --EQ
 
 	Q:SetAOE(true)
@@ -193,14 +194,14 @@ function OnLoad()
 	
 	DLib:RegisterDamageSource(_Q, _MAGIC, 30, 40, _MAGIC, _AP, 0.60, function() return (player:CanUseSpell(_Q) == READY) end)--Without the 15% increase at rank 5
 	DLib:RegisterDamageSource(_W, _MAGIC, 40, 40, _MAGIC, _AP, 0.70, function() return (player:CanUseSpell(_W) == READY) end)
-	DLib:RegisterDamageSource(_E, _MAGIC, 25, 45, _MAGIC, _AP, 0.4, function() return (player:CanUseSpell(_E) == READY) end)--70 / 115 / 160 / 205 / 250 (+ 40% AP)
-	DLib:RegisterDamageSource(_R, _MAGIC, 45, 45, _MAGIC, _AP, 0.2, function() return (player:CanUseSpell(_R) == READY) end)--1 sphere
+	DLib:RegisterDamageSource(_E, _MAGIC, 25, 45, _MAGIC, _AP, 0.40, function() return (player:CanUseSpell(_E) == READY) end)--70 / 115 / 160 / 205 / 250 (+ 40% AP)
+	DLib:RegisterDamageSource(_R, _MAGIC, 45, 45, _MAGIC, _AP, 0.20, function() return (player:CanUseSpell(_R) == READY) end)--1 sphere
 
 	
 	EnemyMinions = minionManager(MINION_ENEMY, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
 	JungleMinions = minionManager(MINION_JUNGLE, QERange, myHero, MINION_SORT_MAXHEALTH_DEC)
 	PosiblePets = minionManager(MINION_OTHER, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
-	PrintChat("Syndra: Loaded")
+	PrintChat("Syndra: Loaded <font color=\"#6699ff\"><b> Bronze DFG fixes!</b>")
 end
 function OnRecvPacket(p)
 	if p.header == 113 then
@@ -610,16 +611,19 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	end
 
 	if Rtarget and UseR then
-		if DLib:IsKillable(Qtarget, GetCombo()) or (os.clock() - UseRTime < 10) then
-			ItemManager:CastOffensiveItems(Rtarget)
-			
+		if IsKillable(Qtarget, GetCombo()) or (os.clock() - UseRTime < 10) then
+			--ItemManager:CastOffensiveItems(Rtarget)
+			if CastItem(ItemManager:GetItem("DFG"):GetId(), Rtarget) then 
+				DFGed.id = Qtarget.networkId
+				DFGed.time = os.clock()
+			end
 			DFG = ItemManager:GetItem("DFG"):GetSlot()
 			if DFG and myHero:CanUseSpell(DFG) == READY then
 				DFGUsed = true
 			end
 		end
 
-		if _IGNITE and GetDistanceSqr(Qtarget.visionPos, myHero.visionPos) < 600 * 600 and (DLib:IsKillable(Rtarget, GetCombo())  or (os.clock() - UseRTime < 10)) then
+		if _IGNITE and GetDistanceSqr(Qtarget.visionPos, myHero.visionPos) < 600 * 600 and (IsKillable(Rtarget, GetCombo())  or (os.clock() - UseRTime < 10)) then
 			CastSpell(_IGNITE, Rtarget)
 			if Menu.Debug.DebugCast then PrintChat("Cast ignite on target") end
 		end
@@ -627,8 +631,8 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	if UseR and not Q:IsReady() and R:IsReady() and not DFGUsed then
 		for i, enemy in ipairs(GetEnemyHeroes()) do
 			if ValidTarget(enemy) and (not Menu.R.Targets[enemy.hash] or (os.clock() - UseRTime < 10)) and GetDistanceSqr(enemy.visionPos, myHero.visionPos) < R.rangeSqr then
-				if DLib:IsKillable(enemy, GetCombo())  or (os.clock() - UseRTime < 10) then
-					if not DLib:IsKillable(enemy, {_Q, _E, _W}) and DLib:IsKillable(enemy, GetCombo()) or (os.clock() - UseRTime < 10) then
+				if IsKillable(enemy, GetCombo())  or (os.clock() - UseRTime < 10) then
+					if not IsKillable(enemy, {_Q, _E, _W}) and IsKillable(enemy, GetCombo()) or (os.clock() - UseRTime < 10) then
 						if not HasBuff(enemy, "UndyingRage") and not HasBuff(enemy, "JudicatorIntervention") then
 							R:Cast(enemy)
 							if Menu.Debug.DebugCast then PrintChat("UR FACE MY BALLS (R in combo) to target: " .. enemy.charName) end
@@ -924,7 +928,13 @@ myHero.barData = {PercentageOffset = {x = 0, y = 0}}
 
 function OnDraw()
 	if DPP ~= nil then DrawCircle3D(DPP.x, myHero.y, DPP.z, 40, 3, ARGB(255, 255, 0, 111), 20) end
-	
+	if Menu.Drawings.DrawPredictedHealth then
+		for i, enemy in ipairs(GetEnemyHeroes()) do
+			if ValidTarget(enemy) then
+				DrawIndicator(enemy)
+			end
+		end
+	end
 	if Menu.Debug.DebugBall then
 		BTOnDraw()
 	end
@@ -964,4 +974,41 @@ function OnDraw()
 	if DrawPrediction ~= nil and Menu.Debug.DebugQ then
 		DrawCircle3D(DrawPrediction.x, DrawPrediction.y, DrawPrediction.z, 100, 3, ARGB(200, 255, 111, 111), 20)--sorry for colorblind people D:
 	end
+end
+
+function IsChasing(target)
+	
+end
+function IsKillable(target, combo)
+	dmg = DLib:CalcComboDamage(target, combo)	
+	if ActDFGed(target) then dmg = dmg*1.2 end
+	if target.health <= dmg then
+		return true
+	else
+		return false
+	end
+end
+
+function ActDFGed(target)
+	if TargetHaveBuff("deathfiregraspspell", target) or GetInventoryItemIsCastable(ItemManager:GetItem("DFG"):GetId()) then
+		return true
+	else
+		return false
+	end
+end
+
+function DrawIndicator(enemy)
+	local damage = DLib:CalcComboDamage(enemy, GetCombo())
+	if ActDFGed(enemy) then damage = damage*1.2 end
+    local SPos, EPos = GetEnemyHPBarPos(enemy)
+
+    -- Validate data
+    if not SPos then return end
+
+    local barwidth = EPos.x - SPos.x
+    local Position = SPos.x + math.max(0, (enemy.health - damage) / enemy.maxHealth) * barwidth
+
+    DrawText("|", 16, math.floor(Position), math.floor(SPos.y + 8), ARGB(255,0,255,0))
+    DrawText("HP: "..math.floor(enemy.health - damage), 13, math.floor(SPos.x), math.floor(SPos.y), (enemy.health - damage) > 0 and ARGB(255, 0, 255, 0) or  ARGB(255, 255, 0, 0))
+
 end
