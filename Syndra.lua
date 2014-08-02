@@ -999,7 +999,7 @@ end
 
 function DrawIndicator(enemy)
 	local damage = DLib:CalcComboDamage(enemy, GetCombo())
-	if ActDFGed(enemy) then damage = damage*1.2+target.maxHealth*0.15 end
+	if ActDFGed(enemy) then damage = damage*1.2+enemy).maxHealth*0.15 end
     local SPos, EPos = GetEnemyHPBarPos(enemy)
 
     -- Validate data
