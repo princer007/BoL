@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.50
+local version = 1.51
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -981,7 +981,7 @@ function IsChasing(target)
 end
 function IsKillable(target, combo)
 	dmg = DLib:CalcComboDamage(target, combo)	
-	if ActDFGed(target) then dmg = dmg*1.2 end
+	if ActDFGed(target) then dmg = dmg*1.2+target.maxHealth*0.15 end
 	if target.health <= dmg then
 		return true
 	else
@@ -999,7 +999,7 @@ end
 
 function DrawIndicator(enemy)
 	local damage = DLib:CalcComboDamage(enemy, GetCombo())
-	if ActDFGed(enemy) then damage = damage*1.2 end
+	if ActDFGed(enemy) then damage = damage*1.2+target.maxHealth*0.15 end
     local SPos, EPos = GetEnemyHPBarPos(enemy)
 
     -- Validate data
