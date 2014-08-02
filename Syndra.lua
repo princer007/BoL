@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.6
+local version = 1.601
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
