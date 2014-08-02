@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.515
+local version = 1.6
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -32,13 +32,12 @@ end
 RequireI:Check()
 
 if RequireI.downloadNeeded == true then return end
-DFGed = {id = 0, stime = 0}
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-local _DFG = 1338
-local MainCombo = {_DFG, _Q, _W, _E, _R, _R, _R, _IGNITE}
+_D = 1338111
+local MainCombo = {_D, _Q, _W, _E, _R, _R, _R, _IGNITE}
 local _QE = 1337
 local WObject
 --SpellData
@@ -192,7 +191,7 @@ function OnLoad()
 
 	Q:SetAOE(true)
 	W:SetAOE(true)
-	DLib:RegisterDamageSource(_DFG, _MAGIC, 0, 0, _MAGIC, _AP, 0, function() return ItemManager:GetItem("DFG"):GetSlot() and (CanUseSpell(ItemManager:GetItem("DFG"):GetSlot()) == READY) end, function(target) return 0.15 * target.maxHealth end)
+	DLib:RegisterDamageSource(_D, _MAGIC, 0,  0,  _MAGIC, _AP, 0,    function() return GetInventoryItemIsCastable(ItemManager:GetItem("DFG"):GetId()) end, function(target) return 0.15 * target.maxHealth end)
 	DLib:RegisterDamageSource(_Q, _MAGIC, 30, 40, _MAGIC, _AP, 0.60, function() return (player:CanUseSpell(_Q) == READY) end)--Without the 15% increase at rank 5
 	DLib:RegisterDamageSource(_W, _MAGIC, 40, 40, _MAGIC, _AP, 0.70, function() return (player:CanUseSpell(_W) == READY) end)
 	DLib:RegisterDamageSource(_E, _MAGIC, 25, 45, _MAGIC, _AP, 0.40, function() return (player:CanUseSpell(_E) == READY) end)--70 / 115 / 160 / 205 / 250 (+ 40% AP)
@@ -614,10 +613,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	if Rtarget and UseR then
 		if IsKillable(Qtarget, GetCombo()) or (os.clock() - UseRTime < 10) then
 			--ItemManager:CastOffensiveItems(Rtarget)
-			if CastItem(ItemManager:GetItem("DFG"):GetId(), Rtarget) then 
-				DFGed.id = Qtarget.networkId
-				DFGed.time = os.clock()
-			end
+			CastItem(ItemManager:GetItem("DFG"):GetId(), Rtarget)
 			DFG = ItemManager:GetItem("DFG"):GetSlot()
 			if DFG and myHero:CanUseSpell(DFG) == READY then
 				DFGUsed = true
