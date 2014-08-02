@@ -37,7 +37,7 @@ if RequireI.downloadNeeded == true then return end
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 _D = 1338111
-local MainCombo = {_D, _Q, _W, _E, _R, _R, _R, _IGNITE}
+local MainCombo = {_Q, _W, _E, _R, _R, _R, _IGNITE}
 local _QE = 1337
 local WObject
 --SpellData
