@@ -1,6 +1,6 @@
 if myHero.charName ~= "Ziggs" then return end
 
-local version = 0.91
+local version = 0.92
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Ziggs"
 --[[
@@ -173,6 +173,7 @@ function OnLoad()
 		DLib:AddToMenu(Menu.Drawings, MainCombo)
 	Menu:addSubMenu("Debug", "Debug")
 		Menu.Debug:addParam("DebugQ", "Draw Q prediction", SCRIPT_PARAM_ONOFF, false)
+	PrintChat("Ziggs -<font color=\"#6699ff\"><b> The Big Bang Theory!</b> </font>: Loaded ")
 end
 function OnInterruptSpell(unit, spell)
 	if (GetDistance(unit, myHero) <= (spellData[_W].range+30+spellData[_W].width)) then
@@ -208,7 +209,7 @@ function Combo()
 	local Wtarget = STS:GetTarget(spellData[_W].range)
 	local Etarget = STS:GetTarget(spellData[_E].range)
 	local Rtarget = STS:GetTarget(spellData[_R].range)
-	if Qtarget and DLib:IsKillable(Qtarget, MainCombo) then
+	if Wtarget and DLib:IsKillable(Wtarget, MainCombo) then
 		ItemManager:CastOffensiveItems(Qtarget)
 	end
 
@@ -280,9 +281,9 @@ function Combo()
 		local BestPos, BestHit = GetBestCircularFarmPosition(spellData[_R].range, spellData[_R].width, preds)
 		--Menu.R.Rmode "Cast to first best position", "Cast to best position near mouse", "Cast to best position near hero"})
 		if Menu.R.Rmode == 2 then 
-			if not GetDistance(BestPos, mousePos) <= Menu.R.Rdist then return end
+			if not (GetDistance(BestPos, mousePos) <= tonumber(Menu.R.Rdist)) then return end
 		elseif Menu.R.Rmode == 3 then 
-			if not GetDistance(BestPos) <= Menu.R.Rdist then return end
+			if not (GetDistance(BestPos) <= tonumber(Menu.R.Rdist)) then return end
 		end
 		if BestHit >= NCounter-1 then
 			R:Cast(BestPos.x, BestPos.z)
