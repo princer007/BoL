@@ -1,6 +1,6 @@
 if myHero.charName ~= "Ziggs" then return end
 
-local version = 0.92
+local version = 0.93
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Ziggs"
 --[[
@@ -64,8 +64,6 @@ local underTurretFocus
 local focusTime = 0
 local TUnit = nil
 local escapePos = nil
-
-local SelectedTarget = nil
 
 _Combo, _Farm, _JungleClear, _Escape,_EscapeTurret, _Interrupter = 1, 2, 3, 4, 5
 _ToMouse, _FromTurret = 0, 1
@@ -173,7 +171,7 @@ function OnLoad()
 		DLib:AddToMenu(Menu.Drawings, MainCombo)
 	Menu:addSubMenu("Debug", "Debug")
 		Menu.Debug:addParam("DebugQ", "Draw Q prediction", SCRIPT_PARAM_ONOFF, false)
-	PrintChat("Ziggs -<font color=\"#6699ff\"><b> The Big Bang Theory!</b> </font>: Loaded ")
+	PrintChat("<font color=\"#FFFFFF\">Ziggs -</font><font color=\"#6699ff\"><b> The Big Bang Theory!</b> </font><font color=\"#FFFFFF\">: Loaded </font>")
 end
 function OnInterruptSpell(unit, spell)
 	if (GetDistance(unit, myHero) <= (spellData[_W].range+30+spellData[_W].width)) then
@@ -199,7 +197,7 @@ end
 local DrawPrediction = nil
 function OnDraw()
 	if DrawPrediction ~= nil and Menu.Debug.DebugQ then
-		DrawCircle(DrawPrediction.x, DrawPrediction.y, DrawPrediction.z, 100, RGB(255, 111, 111))--sorry for colorblind people D:
+		DrawCircle3D(DrawPrediction.x, DrawPrediction.y, DrawPrediction.z, 100, 3, ARGB(200, 255, 111, 111), 20)
 	end
 	--DrawCircle(myHero.x, myHero.y, myHero.z, spellData[_R].width, RGB(255, 111, 111))--sorry for colorblind people D:
 	DrawPrediction = nil
@@ -217,7 +215,7 @@ function Combo()
 		W:Cast()
 	end
 	local castR = true
-	if Menu.R.CastRtokill and SelectedTarget ~= nil and not DLib:IsKillable(SelectedTarget, {_R}) then castR = false end
+	if Menu.R.CastRtokill and STS:SelectedTarget() ~= nil and not DLib:IsKillable(STS:SelectedTarget(), {_R}) then castR = false end
 	
 	if Qtarget and Q:IsReady() and Menu.Combo.UseQ then
 		Cpos, hitchance = Q:GetPrediction(Qtarget)
@@ -265,26 +263,31 @@ function Combo()
 			Wmode = _Combo
 		end
 	end
-	if Menu.R.CastRsel and SelectedTarget ~= nil and ValidTarget(SelectedTarget, spellData[_R].range) and R:IsReady() and castR and not Menu.R.CastR then
-		Cpos, hitchance = R:GetPrediction(SelectedTarget)
-		--PrintChat("Ready to cast ulti, hit chance: "..hitchance.." target: "..SelectedTarget.name)
+	if Menu.R.CastRsel and STS:SelectedTarget() ~= nil and ValidTarget(STS:SelectedTarget(), spellData[_R].range) and R:IsReady() and castR and not Menu.R.CastR then
+		Cpos, hitchance = R:GetPrediction(STS:SelectedTarget())
+		PrintChat("Ready to cast ulti, hit chance: "..hitchance.." target: "..STS:SelectedTarget().name)
 		if hitchance and hitchance > 1 then
 			R:Cast(Cpos.x, Cpos.z)
-			SelectedTarget = nil
 		end
 	elseif NCounter > 1 and R:IsReady() then
 		local AVH = {}
 		for i, enemyHero in ipairs(GetEnemyHeroes()) do
 			if enemyHero.bTargetable then table.insert(AVH, enemyHero) end
 		end
-		local preds = GetPredictedPositionsTable(VP, AVH, spellData[_R].delay, spellData[_R].width, spellData[_R].range, spellData[_R].speed, myHero, false)
-		local BestPos, BestHit = GetBestCircularFarmPosition(spellData[_R].range, spellData[_R].width, preds)
+		local BestPos, BestHit, preds
 		--Menu.R.Rmode "Cast to first best position", "Cast to best position near mouse", "Cast to best position near hero"})
-		if Menu.R.Rmode == 2 then 
-			if not (GetDistance(BestPos, mousePos) <= tonumber(Menu.R.Rdist)) then return end
+		if Menu.R.Rmode == 2 then
+			if GetDistance(mousePos) > spellData[_R].range then return end
+			preds = GetPredictedPositionsTable(VP, AVH, spellData[_R].delay, spellData[_R].width, Menu.R.Rdist, spellData[_R].speed, mousePos, false)
+			BestPos, BestHit = GetBestCircularFarmPosition(spellData[_R].range, spellData[_R].width, preds)
 		elseif Menu.R.Rmode == 3 then 
-			if not (GetDistance(BestPos) <= tonumber(Menu.R.Rdist)) then return end
+			preds = GetPredictedPositionsTable(VP, AVH, spellData[_R].delay, spellData[_R].width, Menu.R.Rdist, spellData[_R].speed, myHero, false)
+			BestPos, BestHit = GetBestCircularFarmPosition(Menu.R.Rdist, spellData[_R].width, preds)
+		else
+			preds = GetPredictedPositionsTable(VP, AVH, spellData[_R].delay, spellData[_R].width, spellData[_R].range, spellData[_R].speed, myHero, false)
+			BestPos, BestHit = GetBestCircularFarmPosition(spellData[_R].range, spellData[_R].width, preds)
 		end
+		--PrintChat(tostring(BestHit).."  |  "..tostring(NCounter))
 		if BestHit >= NCounter-1 then
 			R:Cast(BestPos.x, BestPos.z)
 		end		
@@ -443,28 +446,6 @@ function OnTick()
 	if (os.clock()-focusTime) > 5 then
 		underTurretFocus = false
 		TUnit = nil
-	end
-end
-function OnWndMsg(Msg, Key)
-	if Msg == WM_LBUTTONDOWN then
-		local dist = 0
-		local buf = nil
-		for i, enemy in ipairs(GetEnemyHeroes()) do
-			if ValidTarget(enemy) then
-				if GetDistance(enemy, mousePos) <= dist or buf == nil then
-					minD = GetDistance(enemy, mousePos)
-					buf = enemy
-				end
-			end
-		end
-		
-		if buf and dist < 100 then
-			if SelectedTarget and buf.charName == SelectedTarget.charName then
-				SelectedTarget = nil
-			else
-				SelectedTarget = buf
-			end
-		end
 	end
 end
 function GVD(startPos, distance, endPos)
