@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.601
+local version = 1.61
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -179,7 +179,7 @@ function OnLoad()
 		E:TrackCasting({"SyndraE", "syndrae5"})
 		E:RegisterCastCallback(OnCastE)
 	else
-		WTrack = false
+		WTrack = 0
 		--RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"}
 	end
 
@@ -201,7 +201,7 @@ function OnLoad()
 	EnemyMinions = minionManager(MINION_ENEMY, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
 	JungleMinions = minionManager(MINION_JUNGLE, QERange, myHero, MINION_SORT_MAXHEALTH_DEC)
 	PosiblePets = minionManager(MINION_OTHER, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
-	PrintChat("Syndra: Loaded <font color=\"#6699ff\"><b> Bronze DFG fixes!</b>")
+	PrintChat("Syndra: Loaded <font color=\"#6699ff\"><b> TTL!</b>")
 end
 function OnRecvPacket(p)
 	if p.header == 113 then
@@ -614,7 +614,8 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 		if IsKillable(Qtarget, GetCombo()) or (os.clock() - UseRTime < 10) then
 			--ItemManager:CastOffensiveItems(Rtarget)
 			CastItem(ItemManager:GetItem("DFG"):GetId(), Rtarget)
-			DFG = ItemManager:GetItem("DFG"):GetSlot()
+			CastItem(3188, Rtarget)
+			DFG = ItemManager:GetItem("DFG"):GetSlot() or GetInventorySlotItem(3188)
 			if DFG and myHero:CanUseSpell(DFG) == READY then
 				DFGUsed = true
 			end
@@ -977,6 +978,10 @@ function IsChasing(target)
 	
 end
 function IsKillable(target, combo)
+	for i = 1, target.buffCount do
+        local tBuff = target:getBuff(i)
+		PrintChat(tBuff.name)
+	end
 	dmg = DLib:CalcComboDamage(target, combo)	
 	if ActDFGed(target) then dmg = dmg*1.2 end
 	if target.health <= dmg then
@@ -985,9 +990,8 @@ function IsKillable(target, combo)
 		return false
 	end
 end
-
 function ActDFGed(target)
-	if TargetHaveBuff("deathfiregraspspell", target) or GetInventoryItemIsCastable(ItemManager:GetItem("DFG"):GetId()) then
+	if TargetHaveBuff("deathfiregraspspell", target) or TargetHaveBuff("itemblackfiretorchspell", target) or GetInventoryItemIsCastable(ItemManager:GetItem("DFG"):GetId()) or GetInventoryItemIsCastable(3188) then
 		return true
 	else
 		return false
