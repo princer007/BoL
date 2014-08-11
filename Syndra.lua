@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.61
+local version = 1.611
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -36,7 +36,6 @@ if RequireI.downloadNeeded == true then return end
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-_D = 1338111
 local MainCombo = {_Q, _W, _E, _R, _R, _R, _IGNITE}
 local _QE = 1337
 local WObject
@@ -978,10 +977,12 @@ function IsChasing(target)
 	
 end
 function IsKillable(target, combo)
+--[[
 	for i = 1, target.buffCount do
         local tBuff = target:getBuff(i)
 		PrintChat(tBuff.name)
 	end
+	]]
 	dmg = DLib:CalcComboDamage(target, combo)	
 	if ActDFGed(target) then dmg = dmg*1.2 end
 	if target.health <= dmg then
