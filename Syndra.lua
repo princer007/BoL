@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.611
+local version = 1.62
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -178,6 +178,14 @@ function OnLoad()
 		E:TrackCasting({"SyndraE", "syndrae5"})
 		E:RegisterCastCallback(OnCastE)
 	else
+		Q:TrackCasting("SyndraQ")
+		Q:RegisterCastCallback(function() end)
+		W:TrackCasting("SyndraW")
+		W:RegisterCastCallback(function() end)
+		W2:TrackCasting("syndrawcast")		
+		W2:RegisterCastCallback(function() end)
+		E:TrackCasting({"SyndraE", "syndrae5"})
+		E:RegisterCastCallback(function() end)
 		WTrack = 0
 		--RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"}
 	end
@@ -531,7 +539,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 				W:Cast(Wtarget)
 				if Menu.Debug.DebugCast then PrintChat("Cast W on target in combo") end
 			end
-		elseif Wtarget and W.status == 0 then
+		elseif Wtarget and W.status == 0 and (os.clock() - E:GetLastCastTime() > 0.2 and not E:IsReady()) then
 			local validball = GetWValidBall()
 			if validball and validball.object then
 				W:Cast(validball.object.x, validball.object.z)
@@ -650,9 +658,9 @@ end
 function Farm()
 	if (Menu.Farm.ManaCheck > (myHero.mana / myHero.maxMana) * 100 and Menu.Farm.LaneClear) or (Menu.Farm.ManaCheck2 > (myHero.mana / myHero.maxMana) * 100 and Menu.Farm.Freeze) then return end
 	EnemyMinions:update()
-	local UseQ = Menu.Farm.LaneClear and (Menu.Farm.UseQ >= 3) or (Menu.Farm.UseQ == 2 or Menu.Farm.UseQ == 4)
-	local UseW = Menu.Farm.LaneClear and (Menu.Farm.UseW >= 3) or (Menu.Farm.UseW == 2 or Menu.Farm.UseW == 4)
-	local UseE = Menu.Farm.LaneClear and (Menu.Farm.UseE >= 3) or (Menu.Farm.UseE == 2 or Menu.Farm.UseE == 4)
+	local UseQ = Menu.Farm.LaneClear and (Menu.Farm.UseQ >= 3) or Menu.Farm.Freeze and Menu.Farm.UseQ == 2 or Menu.Farm.UseQ == 4
+	local UseW = Menu.Farm.LaneClear and (Menu.Farm.UseW >= 3) or Menu.Farm.Freeze and Menu.Farm.UseW == 2 or Menu.Farm.UseW == 4
+	local UseE = Menu.Farm.LaneClear and (Menu.Farm.UseE >= 3) or Menu.Farm.Freeze and Menu.Farm.UseE == 2 or Menu.Farm.UseE == 4
 	
 	local CasterMinions = SelectUnits(EnemyMinions.objects, function(t) return (t.charName:lower():find("wizard") or t.charName:lower():find("caster")) and ValidTarget(t) and GetDistanceSqr(t) < W.rangeSqr end)
 	local MeleeMinions = SelectUnits(EnemyMinions.objects, function(t) return (t.charName:lower():find("basic") or t.charName:lower():find("cannon")) and ValidTarget(t) and GetDistanceSqr(t) < W.rangeSqr end)
@@ -681,8 +689,8 @@ function Farm()
 	end
 
 	if UseQ and ( not UseW or W.status == 0 ) and Q:IsReady() then
-		CasterMinions = GetPredictedPositionsTable(VP, CasterMinions, Delays[_Q], Widths[_Q], Ranges[_Q] + Widths[_Q], math.huge, myHero, false)
-		MeleeMinions = GetPredictedPositionsTable(VP, MeleeMinions, Delays[_Q], Widths[_Q], Ranges[_Q] + Widths[_Q], math.huge, myHero, false)
+		CasterMinions = GetPredictedPositionsTable(VP, CasterMinions, 0, Widths[_Q], Ranges[_Q] + Widths[_Q]/2, math.huge, myHero, false)
+		MeleeMinions = GetPredictedPositionsTable(VP, MeleeMinions, 0, Widths[_Q], Ranges[_Q] + Widths[_Q]/2, math.huge, myHero, false)
 
 		local BestPos1, BestHit1 = GetBestCircularFarmPosition(Ranges[_Q] + Widths[_Q], Widths[_Q], CasterMinions)
 		local BestPos2, BestHit2 = GetBestCircularFarmPosition(Ranges[_Q] + Widths[_Q], Widths[_Q], MeleeMinions)
@@ -731,7 +739,6 @@ function Farm()
 		end
 	end
 end
-
 function JungleFarm()
 	JungleMinions:update()
 	local UseQ = Menu.JungleFarm.UseQ
@@ -742,12 +749,14 @@ function JungleFarm()
 
 	local CloseMinion = CloseMinions[1]
 	local FarMinion = AllMinions[1]
-	if not CloseMinion and os.clock()-Q:GetLastCastTime()>0.5 then 
-		W:__Cast(myHero.x, myHero.z)
+	if not CloseMinion and W.status == 1 and os.clock()-Q:GetLastCastTime()>0.7 then 
+		W:Cast(myHero.x, myHero.z)
+		if Menu.Debug.DebugCast then PrintChat("Cast W to hero for put minion/ball in JC") end
 	end
 	
 	if WStatus == "JungleSteal" then
-		W:__Cast(myHero.x, myHero.z)
+		W:Cast(myHero.x, myHero.z)
+		if Menu.Debug.DebugCast then PrintChat("Cast W to hero for finish JS") end
 		WStatus = nil
 	end
 	if ValidTarget(CloseMinion) then
@@ -758,25 +767,23 @@ function JungleFarm()
 			SOWi:DisableAttacks()
 			if ValidTarget(selectedTarget) and DLib:IsKillable(selectedTarget, {_W}) and GetDistanceSqr(myHero.visionPos, selectedTarget) <= W.rangeSqr and W:IsReady() then
 				if WStatus == nil then
-					W:__Cast(selectedTarget.x, selectedTarget.z)
+					W:Cast(selectedTarget.x, selectedTarget.z)
+					if Menu.Debug.DebugCast then PrintChat("Cast W for get enemy minion in JS") end
 					WStatus = "JungleSteal"
 				end
 			end
 		else
-			if UseQ and Q:IsReady() then
-				Q:__Cast(CloseMinion)
-			end
 			if UseW then
 				local targetBall = nil
 				local activeballs = GetValidBalls()
 				for i, ball in ipairs(activeballs) do
 					targetBall = ball
 				end
-				if (os.clock()-Q:GetLastCastTime() > Q.delay+0.1) and WStatus == nil and targetBall ~= nil then
-					DelayAction(function() return W:__Cast(targetBall.object.x, targetBall.object.z) end, 0.1)
-					--W:Cast(targetBall.object.x, targetBall.object.z)
+				if os.clock()-Q:GetLastCastTime() > 0.7 and not Q:IsReady() and W.status == 0 and targetBall ~= nil then
+					W:Cast(targetBall.object.x, targetBall.object.z)
+					if Menu.Debug.DebugCast then PrintChat("Cast W for get valid ball in JC") end
 					WStatus = "HaveBall"
-				elseif WStatus == "HaveBall" then
+				elseif W.status == 1 then
 					local ValidMinion = nil
 					----=== Valid minion
 					for i, minion in ipairs(JungleMinions.objects) do
@@ -791,20 +798,23 @@ function JungleFarm()
 					end
 					----=== Finished
 					WStatus = nil
-					W:__Cast(ValidMinion.x, ValidMinion.z)
-					--W:Cast(myHero.x, myHero.z)
+					W:Cast(ValidMinion.x, ValidMinion.z)
+					if Menu.Debug.DebugCast then PrintChat("Cast W on closest minion") end
 				end
 			end
 				
+			if UseQ and Q:IsReady() then
+				Q:Cast(CloseMinion)
+			end
 
 			if UseE and os.clock() - Q:GetLastCastTime() > 1 then
-				E:__Cast(CloseMinion)
+				E:Cast(CloseMinion)
 			end
 		end
 	elseif ValidTarget(FarMinion) and GetDistanceSqr(FarMinion) <= (Q.range + 588)^2 and GetDistanceSqr(FarMinion) > Q.rangeSqr and DLib:IsKillable(FarMinion, {_E}) then
 		if Q:IsReady() and E:IsReady() then
 			local QPos = Vector(myHero.visionPos) + Q.range * (Vector(FarMinion) - Vector(myHero)):normalized()
-			Q:__Cast(QPos.x, QPos.z)
+			Q:Cast(QPos.x, QPos.z)
 			QECombo = os.clock()
 		end
 	end	
