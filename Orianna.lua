@@ -8,7 +8,7 @@ Include screenshot and describing of error(what were you doing when it appear)
 ]]
 if myHero.charName ~= "Orianna" then return end
 
-local version = 1.22
+local version = 1.23
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Orianna"
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -132,6 +132,11 @@ function OnLoad()
 	DLib = DamageLib()
 	DManager = DrawManager()
 	
+	spellQ:SetSkillshot(VP, SKILLSHOT_LINEAR,   spellData[_Q].width, spellData[_Q].delay, spellData[_Q].speed, false)
+	spellW:SetSkillshot(VP, SKILLSHOT_CIRCULAR, spellData[_W].width, spellData[_W].delay, spellData[_W].speed, false)
+	spellE:SetSkillshot(VP, SKILLSHOT_LINEAR,   spellData[_E].width, spellData[_E].delay, spellData[_E].speed, false)
+	spellR:SetSkillshot(VP, SKILLSHOT_CIRCULAR, spellData[_R].width, spellData[_R].delay, spellData[_R].speed, false)
+	
 	Menu:addSubMenu("Orbwalking", "Orbwalking")
 	SOWi:LoadToMenu(Menu.Orbwalking)
 	Menu:addSubMenu("Target selector", "STS")
@@ -231,7 +236,7 @@ function OnLoad()
 	else
 		_IGNITE = nil
 	end
-	PrintChat("<font color=\"#81BEF7\">[Orianna] Command: Load</font>")
+	PrintChat("<font color=\"#81BEF7\">[Orianna] Command: Load</font><font color=\"#6699ff\"><b> Prodiction!</b>")
 end
 function OnSendPacket(p)
 	if Menu.Misc.BlockR and p.header == Packet.headers.S_CAST then
@@ -287,17 +292,16 @@ end
 
 function CastQ(target, fast)
 	local Speed = spellData[_Q].speed
-	local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(target, spellData[_Q].delay, spellData[_Q].width, spellData[_Q].range, Speed, BallPos)
-	local CastPoint = CastPosition
+	spellQ:SetSourcePosition(BallPos)
+	local CastPosition,  HitChance,  Position = spellQ:GetPrediction(target)
 	if HitChance and (HitChance < 2) then return end
-	DrawPrediction = CastPoint
-
+	DrawPrediction = CastPosition
+	PrintChat(tostring(CastPosition))
 	if GetDistance(myHero.visionPos, Position) > spellData[_Q].range + spellData[_W].width + VP:GetHitBox(target) then
 		target2 = GetBestTarget(spellData[_Q].range, target)
 		if target2 then
-			CastPosition,  HitChance,  Position = VP:GetLineCastPosition(target2, spellData[_Q].delay, spellData[_Q].width, spellData[_Q].range, Speed, BallPos)
-			CastPoint = CastPosition
-			DrawPrediction = CastPoint
+			CastPosition,  HitChance,  Position = spellQ:GetPrediction(target)
+			DrawPrediction = CastPosition
 		else
 			do return end
 		end
@@ -308,13 +312,13 @@ function CastQ(target, fast)
 	end
 
 	if spellE:IsReady() and Menu.Misc.EQ ~= 0 then
-		local TravelTime = GetDistance(BallPos, CastPoint) / spellData[_Q].speed
-		local MinTravelTime = GetDistance(myHero, CastPoint) / spellData[_Q].speed + GetDistance(myHero, BallPos) / spellData[_E].speed
+		local TravelTime = GetDistance(BallPos, CastPosition) / spellData[_Q].speed
+		local MinTravelTime = GetDistance(myHero, CastPosition) / spellData[_Q].speed + GetDistance(myHero, BallPos) / spellData[_E].speed
 		local Etarget = myHero
 
 		for i, ally in ipairs(GetAllyHeroes()) do
 			if ValidTarget(ally, spellData[_E].range, false) then
-				local t = GetDistance(ally, CastPoint) / spellData[_Q].speed + GetDistance(ally, BallPos) / spellData[_E].speed
+				local t = GetDistance(ally, CastPosition) / spellData[_Q].speed + GetDistance(ally, BallPos) / spellData[_E].speed
 				if t < MinTravelTime then
 					MinTravelTime = t
 					Etarget = ally
@@ -328,11 +332,11 @@ function CastQ(target, fast)
 			do return end
 		end
 	end
-	if GetDistanceSqr(myHero.visionPos, CastPoint) < spellData[_Q].range^2 then
-		spellQ:Cast(CastPoint.x, CastPoint.z)
+	if GetDistanceSqr(myHero.visionPos, CastPosition) < spellData[_Q].range^2 then
+		spellQ:Cast(CastPosition.x, CastPosition.z)
 	else
-		CastPoint = Vector(myHero.visionPos) + spellData[_Q].range * (Vector(CastPoint) - Vector(myHero)):normalized()
-		spellQ:Cast(CastPoint.x, CastPoint.z)
+		CastPosition = Vector(myHero.visionPos) + spellData[_Q].range * (Vector(CastPosition) - Vector(myHero)):normalized()
+		spellQ:Cast(CastPosition.x, CastPosition.z)
 	end
 end
 
@@ -357,7 +361,7 @@ function CastECH(target, n)
 end
 
 function CastR(target)
-	local position = VP:GetPredictedPos(target, spellData[_R].delay)
+	local position = spellR:GetPrediction(target)
 	if GetDistance(position, BallPos) < spellData[_R].width and GetDistance(target, BallPos) < spellData[_R].width then
 		spellR:Cast()
 	end
@@ -487,14 +491,14 @@ end
 function FindBestLocationToQ(target)
 	local points = {}
 	local targets = {}
-	
-	local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(target, spellData[_Q].delay, spellData[_Q].width, spellData[_Q].range, spellData[_Q].speed, BallPos)
+	spellQ:SetSourcePosition(BallPos)
+	local CastPosition,  HitChance,  Position = spellQ:GetPrediction(target)
 	table.insert(points, Position)
 	table.insert(targets, target)
 	
 	for i, enemy in ipairs(GetEnemyHeroes()) do
 		if ValidTarget(enemy, spellData[_Q].range + spellData[_R].width) and enemy.networkID ~= target.networkID then
-			CastPosition,  HitChance,  Position = VP:GetLineCastPosition(enemy, spellData[_Q].delay, spellData[_Q].width, spellData[_Q].range, spellData[_Q].speed, BallPos)
+			CastPosition,  HitChance,  Position = spellQ:GetPrediction(target)
 			table.insert(points, Position)
 			table.insert(targets, enemy)
 		end
@@ -790,7 +794,7 @@ end
 
 function OnDraw()
 	if Menu.Drawing.AADistance then
-		SOW:DrawAARange(2,  ARGB(255, 0, 255, 0))
+		SOWi:DrawAARange(2,  ARGB(255, 0, 255, 0))
 	end
 
 	if Menu.Drawing.Qrange then
