@@ -8,7 +8,7 @@ Include screenshot and describing of error(what were you doing when it appear)
 ]]
 if myHero.charName ~= "Orianna" then return end
 
-local version = 1.23
+local version = 1.235
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Orianna"
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -296,7 +296,7 @@ function CastQ(target, fast)
 	local CastPosition,  HitChance,  Position = spellQ:GetPrediction(target)
 	if HitChance and (HitChance < 2) then return end
 	DrawPrediction = CastPosition
-	PrintChat(tostring(CastPosition))
+	--PrintChat(tostring(CastPosition))
 	if GetDistance(myHero.visionPos, Position) > spellData[_Q].range + spellData[_W].width + VP:GetHitBox(target) then
 		target2 = GetBestTarget(spellData[_Q].range, target)
 		if target2 then
@@ -590,7 +590,7 @@ function OnTickChecks()
 			if GetDistance(unit) < spellData[_E].range then
 				for champion, spell in pairs(InitiatorsList) do
 					if LastChampionSpell[unit.networkID] and LastChampionSpell[unit.networkID].name ~=nil and Menu.Misc.AutoEInitiate[champion..LastChampionSpell[unit.networkID].name] and (os.clock() - LastChampionSpell[unit.networkID].time < 1.5) then
-						PrintChat(tostring(LastChampionSpell[unit.networkID].name))
+						--PrintChat(tostring(LastChampionSpell[unit.networkID].name))
 						CastE(unit)
 					end
 				end
