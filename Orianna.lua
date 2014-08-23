@@ -8,7 +8,7 @@ Include screenshot and describing of error(what were you doing when it appear)
 ]]
 if myHero.charName ~= "Orianna" then return end
 
-local version = 1.235
+local version = 1.236
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Orianna"
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -134,7 +134,6 @@ function OnLoad()
 	
 	spellQ:SetSkillshot(VP, SKILLSHOT_LINEAR,   spellData[_Q].width, spellData[_Q].delay, spellData[_Q].speed, false)
 	spellW:SetSkillshot(VP, SKILLSHOT_CIRCULAR, spellData[_W].width, spellData[_W].delay, spellData[_W].speed, false)
-	spellE:SetSkillshot(VP, SKILLSHOT_LINEAR,   spellData[_E].width, spellData[_E].delay, spellData[_E].speed, false)
 	spellR:SetSkillshot(VP, SKILLSHOT_CIRCULAR, spellData[_R].width, spellData[_R].delay, spellData[_R].speed, false)
 	
 	Menu:addSubMenu("Orbwalking", "Orbwalking")
@@ -849,8 +848,7 @@ function OnProcessSpell(unit, spell)
 		BallMoving = true
 		BallPos = spell.target
 	end
-	
-	if unit.type == "obj_AI_Hero" then
+	if unit.type == "AIHeroClient" then
 		LastChampionSpell[unit.networkID] = {name = spell.name, time=os.clock()}
 	end
 end
