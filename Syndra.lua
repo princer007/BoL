@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.62
+local version = 1.63
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -36,14 +36,14 @@ if RequireI.downloadNeeded == true then return end
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-local MainCombo = {_Q, _W, _E, _R, _R, _R, _IGNITE}
+local MainCombo = {_Q, _W, _E, _R, _R, _R}
 local _QE = 1337
 local WObject
 --SpellData
 local Ranges = {[_Q] = 800,       [_W] = 920,  [_E] = 700,       [_R] = 675}
 local Widths = {[_Q] = 180,       [_W] = 200,  [_E] = 45 * 0.5,  [_R] = 1,    [_QE] = 60}
-local Delays = {[_Q] = 0.25,      [_W] = 0.5,  [_E] = 0.5,       [_R] = 0.25, [_QE] = 1800} ---_QE delay updates in function of _E delay + Speed and the distance to the ball
-local Speeds = {[_Q] = 3000,	  [_W] = 1450, [_E] = 2500,      [_R] = 1100, [_QE] = 1600}
+local Delays = {[_Q] = 0.5,       [_W] = 0.5,  [_E] = 0.5,       [_R] = 0.25, [_QE] = 1800} ---_QE delay updates in function of _E delay + Speed and the distance to the ball
+local Speeds = {[_Q] = math.huge, [_W] = 1450, [_E] = 2500,      [_R] = 1100, [_QE] = 1600}
 local FocusJungleNames = {"GiantWolf8.1.1","AncientGolem7.1.1","Wraith9.1.1","LizardElder10.1.1","Golem11.1.2","GiantWolf2.1.1","AncientGolem1.1.1",
 "Wraith3.1.1","LizardElder4.1.1","Golem5.1.2","GreatWraith13.1.1","GreatWraith14.1.1"}
 
@@ -128,16 +128,12 @@ function OnLoad()
 		if VIP_USER then
 			Menu.Misc:addParam("WPet",  "Auto grab pets using W", SCRIPT_PARAM_ONOFF, true)
 		end
-		Menu.Misc:addParam("PRQ", "Prediction sensitivity(Q)", SCRIPT_PARAM_SLICE, 2, 1, 4)
-		
-		Menu.Misc:addParam("Whitchance", "W min hitchance(1 - insta cast)", SCRIPT_PARAM_SLICE, 1, 1, 2)
-
+		Menu.Misc:addParam("PRQ", "Prediction sensitivity(Q)", SCRIPT_PARAM_SLICE, 1, 1, 4)
+		Menu.Misc:addParam("Whitchance", "W min hitchance(1 - insta cast)", SCRIPT_PARAM_SLICE, 2, 1, 2)
 		Menu.Misc:addSubMenu("Auto-Interrupt", "Interrupt")
 			Interrupter(Menu.Misc.Interrupt, OnInterruptSpell)
-
 		Menu.Misc:addSubMenu("Anti-Gapclosers", "AG")
 			AntiGapcloser(Menu.Misc.AG, OnGapclose)
-
 		Menu.Misc:addParam("MEQ", "Manual E+Q Combo", SCRIPT_PARAM_ONKEYDOWN, false,   string.byte("T"))
 
 	Menu:addSubMenu("Drawings", "Drawings")
@@ -165,27 +161,18 @@ function OnLoad()
 	E = Spell(_E, Ranges[_E], false)
 	EQ = Spell(_E, Ranges[_E], false)
 	R = Spell(_R, Ranges[_R], VIP_USER)
+	
+	Q:TrackCasting("SyndraQ")
+	Q:RegisterCastCallback(OnCastQ)
+		
+	W:TrackCasting("SyndraW")
+		
+	W2:TrackCasting("syndrawcast")
+	W2:RegisterCastCallback(OnCastW)
 	if VIP_USER then
-		Q:TrackCasting("SyndraQ")
-		Q:RegisterCastCallback(OnCastQ)
-		
-		W:TrackCasting("SyndraW")
 		W:RegisterCastCallback(function() end)
-		
-		W2:TrackCasting("syndrawcast")
-		W2:RegisterCastCallback(OnCastW)
-		
-		E:TrackCasting({"SyndraE", "syndrae5"})
-		E:RegisterCastCallback(OnCastE)
 	else
-		Q:TrackCasting("SyndraQ")
-		Q:RegisterCastCallback(function() end)
-		W:TrackCasting("SyndraW")
-		W:RegisterCastCallback(function() end)
-		W2:TrackCasting("syndrawcast")		
-		W2:RegisterCastCallback(function() end)
-		E:TrackCasting({"SyndraE", "syndrae5"})
-		E:RegisterCastCallback(function() end)
+		W:RegisterCastCallback(OnCastWB)
 		WTrack = 0
 		--RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"}
 	end
@@ -204,11 +191,18 @@ function OnLoad()
 	DLib:RegisterDamageSource(_E, _MAGIC, 25, 45, _MAGIC, _AP, 0.40, function() return (player:CanUseSpell(_E) == READY) end)--70 / 115 / 160 / 205 / 250 (+ 40% AP)
 	DLib:RegisterDamageSource(_R, _MAGIC, 45, 45, _MAGIC, _AP, 0.20, function() return (player:CanUseSpell(_R) == READY) end)--1 sphere
 
+	if myHero:GetSpellData(SUMMONER_1).name == "summonerdot" then 	 	
+		_IGNITE = SUMMONER_1 	 	
+	elseif myHero:GetSpellData(SUMMONER_2).name == "summonerdot" then 	 	
+		_IGNITE = SUMMONER_2 	 	
+	else 	 	
+		_IGNITE = nil 	 	
+	end 
 	
 	EnemyMinions = minionManager(MINION_ENEMY, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
 	JungleMinions = minionManager(MINION_JUNGLE, QERange, myHero, MINION_SORT_MAXHEALTH_DEC)
 	PosiblePets = minionManager(MINION_OTHER, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
-	PrintChat("Syndra: Loaded <font color=\"#6699ff\"><b> TTL!</b>")
+	PrintChat("Syndra: Loaded <font color=\"#6699ff\"><b> Use Prediction sensitivity = 1!</b>")
 end
 function OnRecvPacket(p)
 	if p.header == 113 then
@@ -397,18 +391,6 @@ end
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 function OnProcessSpell(unit, spell)
-if not VIP_USER and unit == myHero then
---RegisterCallbacks = {"SyndraQ", "SyndraW", "syndraw2", "SyndraE", "syndrae5"} 
-	if spell.name:lower():find("syndraq") then
-		OnCastQ(spell)
-	elseif spell.name:lower():find("syndrawcast") then
-		OnCastW(spell)
-	elseif spell.name:lower():find("syndraw") then
-		OnCastWB(spell)
-	elseif spell.name:lower():find("syndrae") or spell.name:lower():find("syndrae5") then
-		OnCastE(spell)
-	end
-end
 if (Menu.Harass.Enabled or Menu.Harass.Enabled2) and Menu.Harass.PP then
 		if unit.team ~= myHero.team then
 		    if unit.type == myHero.type and unit ~= nil then
@@ -470,14 +452,6 @@ end
 function OnCastWB(spell)
 	WTrack = 1
 end
-function OnCastE(spell)
---[[
-	if os.clock() - EQCombo < 1.5 and EQTarget then
-		DelayAction(function(t) Cast2Q(EQTarget) end, 0.6, {EQTarget})
-	end
-]]
-end
-
 function StartEQCombo(unit, Qfirst)
 	if (Menu.EQ.Order == 1 or Qfirst == false) and Qfirst ~= true then
 		EQCombo = os.clock()
@@ -567,7 +541,7 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 	if UseQ then
 		if Qtarget and os.clock() - W:GetLastCastTime() > 0.25 and os.clock() - E:GetLastCastTime() > 0.25 then
 			VP.ShotAtMaxRange = true
-			Q.speed = (Speeds[_Q]*tonumber(Menu.Misc.PRQ))
+			Q.delay = (Delays[_Q]/tonumber(Menu.Misc.PRQ))
 			--local QtargetPos, hitchance = VP:GetCircularAOECastPosition(Qtarget, Delays[_Q], Widths[_Q], Ranges[_Q], (Speeds[_Q]*tonumber(Menu.Misc.PRQ)), myHero)
 			local QtargetPos, hitchance = Q:GetPrediction(Qtarget)
 			if QtargetPos and hitchance and hitchance>=2 then
@@ -616,7 +590,10 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 			end
 		end
 	end
-
+	if Rtarget and _IGNITE and GetDistanceSqr(Rtarget.visionPos, myHero.visionPos) < 600 * 600 and (IsKillable(Rtarget, GetCombo())  or (os.clock() - UseRTime < 10)) then
+		CastSpell(_IGNITE, Rtarget)
+		if Menu.Debug.DebugCast then PrintChat("Cast ignite on target") end
+	end
 	if Rtarget and UseR then
 		if IsKillable(Qtarget, GetCombo()) or (os.clock() - UseRTime < 10) then
 			--ItemManager:CastOffensiveItems(Rtarget)
@@ -626,11 +603,6 @@ function UseSpells(UseQ, UseW, UseE, UseEQ, UseR, target)
 			if DFG and myHero:CanUseSpell(DFG) == READY then
 				DFGUsed = true
 			end
-		end
-
-		if _IGNITE and GetDistanceSqr(Qtarget.visionPos, myHero.visionPos) < 600 * 600 and (IsKillable(Rtarget, GetCombo())  or (os.clock() - UseRTime < 10)) then
-			CastSpell(_IGNITE, Rtarget)
-			if Menu.Debug.DebugCast then PrintChat("Cast ignite on target") end
 		end
 	end
 	if UseR and not Q:IsReady() and R:IsReady() and not DFGUsed then
@@ -993,9 +965,9 @@ function IsKillable(target, combo)
 		PrintChat(tBuff.name)
 	end
 	]]
-	dmg = DLib:CalcComboDamage(target, combo)	
+	dmg = DLib:CalcComboDamage(target, combo)
 	if ActDFGed(target) then dmg = dmg*1.2 end
-	if target.health <= dmg then
+	if target.health <= dmg+getIgnite() then
 		return true
 	else
 		return false
@@ -1008,10 +980,17 @@ function ActDFGed(target)
 		return false
 	end
 end
-
+function getIgnite()
+	if _IGNITE and CanUseSpell(_IGNITE) then
+		return 50 + 20 * GetSpellData(_IGNITE).level
+	else
+		return 0
+	end
+end
 function DrawIndicator(enemy)
 	local damage = DLib:CalcComboDamage(enemy, GetCombo())
 	if ActDFGed(enemy) then damage = damage*1.2 end
+	damage = damage + getIgnite()
     local SPos, EPos = GetEnemyHPBarPos(enemy)
 
     -- Validate data
