@@ -1,14 +1,10 @@
 --[[[
-
-Feel free using this, but please, report about an "unusual" moves or things
-
-http://botoflegends.com/forum/user/89725-princer007/
-Include screenshot and describing of error(what were you doing when it appear)
-
+Новые преды
+Фикс хренового каста ульты от позиции игрока вместо шара
 ]]
 if myHero.charName ~= "Orianna" then return end
 
-local version = 1.236
+local version = 1.24
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Orianna"
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -79,10 +75,10 @@ local InitiatorsList =
 
 --[[Spell data]]
 spellData = {
-    [_Q] = { range = 815,  skillshotType = SKILLSHOT_LINEAR,   width = 145,  delay = 0.5,  speed = 1800,	  collision = false },
-    [_W] = { range = 0,    skillshotType = SKILLSHOT_CIRCULAR, width = 260, delay = 0.5,   speed = math.huge, collision = false },
-    [_E] = { range = 1095, skillshotType = SKILLSHOT_LINEAR,   width = 145,  delay = 0.5,  speed = 1400,      collision = true  },
-    [_R] = { range = 0,	   skillshotType = SKILLSHOT_CIRCULAR, width = 425, delay = 0.5,   speed = math.huge, collision = false },
+    [_Q] = { range = 815,  skillshotType = SKILLSHOT_LINEAR,   width = 145,  delay = 0.1,  speed = 1200,	  collision = false },
+    [_W] = { range = 0,    skillshotType = SKILLSHOT_CIRCULAR, width = 260,  delay = 0.0,  speed = math.huge, collision = false },
+    [_E] = { range = 1095, skillshotType = SKILLSHOT_LINEAR,   width = 145,  delay = 0.1,  speed = 1400,      collision = true  },
+    [_R] = { range = 0,	   skillshotType = SKILLSHOT_CIRCULAR, width = 425,  delay = 0.6,  speed = math.huge, collision = false },
 }
 ------------------------------------------------------------------------------------------------
 local MainCombo = {_AA, _Q, _W, _R, _IGNITE}
@@ -134,7 +130,7 @@ function OnLoad()
 	
 	spellQ:SetSkillshot(VP, SKILLSHOT_LINEAR,   spellData[_Q].width, spellData[_Q].delay, spellData[_Q].speed, false)
 	spellW:SetSkillshot(VP, SKILLSHOT_CIRCULAR, spellData[_W].width, spellData[_W].delay, spellData[_W].speed, false)
-	spellR:SetSkillshot(VP, SKILLSHOT_CIRCULAR, spellData[_R].width, spellData[_R].delay, spellData[_R].speed, false)
+	--spellR:SetSkillshot(VP, SKILLSHOT_CIRCULAR, spellData[_R].width, spellData[_R].delay, spellData[_R].speed, false)
 	
 	Menu:addSubMenu("Orbwalking", "Orbwalking")
 	SOWi:LoadToMenu(Menu.Orbwalking)
@@ -228,9 +224,9 @@ function OnLoad()
 	--DLib:RegisterDamageSource(_AA, _PHYSICAL, 0, 0, _PHYSICAL, _AP, 0, function() return SOWi:CanAttack() end, function() return myHero.totalDamage+passiveDmg[myHero.lvl] end)
 	
 	
- 	if myHero:GetSpellData(SUMMONER_1).name:find("SummonerDot") then
+ 	if myHero:GetSpellData(SUMMONER_1).name:find("summonerdot") then
 		_IGNITE = SUMMONER_1
-	elseif myHero:GetSpellData(SUMMONER_2).name:find("SummonerDot") then
+	elseif myHero:GetSpellData(SUMMONER_2).name:find("summonerdot") then
 		_IGNITE = SUMMONER_2
 	else
 		_IGNITE = nil
@@ -325,7 +321,6 @@ function CastQ(target, fast)
 			end
 		end
 
-
 		if MinTravelTime < (Menu.Misc.EQ / 100) * TravelTime and (not Etarget.isMe or GetDistance(BallPos, myHero) > 100) and GetDistance(Etarget) < GetDistance(CastPoint) then
 			CastE(Etarget)
 			do return end
@@ -356,13 +351,6 @@ function CastECH(target, n)
 	local hitcount, hit = CheckEnemiesHitByE(target)
 	if hitcount >= n then
 		CastE(target)
-	end
-end
-
-function CastR(target)
-	local position = spellR:GetPrediction(target)
-	if GetDistance(position, BallPos) < spellData[_R].width and GetDistance(target, BallPos) < spellData[_R].width then
-		spellR:Cast()
 	end
 end
 
@@ -578,6 +566,7 @@ function OnTickChecks()
 	end
 	
 	if Menu.Misc.UseR > 1 and spellR:IsReady() then
+		spellR:SetSourcePosition(BallPos)
 		local hitcount, hit = CheckEnemiesHitByR()
 		if (hitcount >= (Menu.Misc.UseR - 1)) and GetDistanceToClosestAlly(BallPos) < spellData[_Q].range * Far then
 			spellR:Cast()
@@ -647,7 +636,7 @@ end
 function CountAllyHeroInRange(range, point)
 	local n = 0
 	for i, ally in ipairs(GetAllyHeroes()) do
-		if ValidTarget(ally, math.huge, false) and GetDistanceSqr(point, ally) <= range * range then
+		if ValidTarget(ally, math.huge, false) and GetDistance(point, ally) <= range then
 			n = n + 1
 		end
 	end
@@ -655,17 +644,18 @@ function CountAllyHeroInRange(range, point)
 end
 
 function Combo(target)
-		if Menu.Combo.UseI and target and _IGNITE and IGNITEREADY and GetDistanceSqr(target.visionPos, myHero.visionPos) < 600 * 600 and DLib:IsKillable(target, MainCombo) then
+		if Menu.Combo.UseI and target and _IGNITE and IGNITEREADY and GetDistance(target.visionPos, myHero.visionPos) < 600 and DLib:IsKillable(target, MainCombo) then
 			CastSpell(_IGNITE, target)
 		end
     -- TODO: Single target / team fight checks
     if SINGLE_TARGET then
-        if target and ((GetDistanceSqr(target) > 300^2) or ((player.health/player.maxHealth <= 0.25) and (player.health/player.maxHealth < target.health/target.maxHealth))) then
+        if target and ((GetDistance(target) > 300) or ((player.health/player.maxHealth <= 0.25) and (player.health/player.maxHealth < target.health/target.maxHealth))) then
             SOWi:DisableAttacks()
 		end
 
         if target and Menu.Combo.UseR and CountEnemyHeroInRange(1000, target) >= CountAllyHeroInRange(1000, target)  then
             if target and DLib:CalcComboDamage(target, MainCombo) > target.health and GetDistanceToClosestAlly(BallPos) < spellData[_Q].range * Far then
+				spellR:SetSourcePosition(BallPos)
                 local hitcount, hit = CheckEnemiesHitByR()
                 if hitcount >= NCounter then
                     spellR:Cast()
@@ -694,11 +684,12 @@ function Combo(target)
         end
     else
         for i, enemy in ipairs(GetEnemyHeroes()) do
-            if ValidTarget(enemy) and (GetDistanceSqr(enemy) < 300^2) and (player.health/player.maxHealth <= 0.25) then
+            if ValidTarget(enemy) and (GetDistance(enemy) < 300) and (player.health/player.maxHealth <= 0.25) then
                 SOWi:DisableAttacks()
             end
         end
         if Menu.Combo.UseR then
+			spellR:SetSourcePosition(BallPos)
             if CountEnemyHeroInRange(800, BallPos) > 1 then
                 local hitcount, hit = CheckEnemiesHitByR()
                 local potentialkills, kills = 0, 0
@@ -717,7 +708,7 @@ function Combo(target)
                 end
             elseif NCounter == 1 then
                 if (Menu.Misc.PaR and target) or (target and DLib:CalcComboDamage(target, {_Q, _W, _R}) > target.health and GetDistanceToClosestAlly(BallPos) < spellData[_Q].range * Far) then
-					CastR(target)
+					spellR:Cast()
                 end
             end
         end
@@ -848,6 +839,9 @@ function OnProcessSpell(unit, spell)
 		BallMoving = true
 		BallPos = spell.target
 	end
+	if unit.isMe and spell.name:find("OrianaDetonateCommand") then
+		PrintChat(tostring(GetDistance(spellR.sourcePosition, spell.startPos)))
+	end
 	if unit.type == "AIHeroClient" then
 		LastChampionSpell[unit.networkID] = {name = spell.name, time=os.clock()}
 	end
@@ -859,7 +853,7 @@ function OnInterruptSpell(unit, spell)
 			if unit.charName ~= "Warwick" then 
 				spellQ:Cast(unit.visionPos.x, unit.visionPos.z)
 			else
-				spellQ:Cast(spell.endPos.x, spell.endPos.z)
+				spellQ:Cast(spell.startPos.x, spell.startPos.z)
 			end
 		else
 			if not BallMoving then
