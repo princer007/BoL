@@ -231,7 +231,7 @@ function OnLoad()
 	else
 		_IGNITE = nil
 	end
-	PrintChat("<font color=\"#81BEF7\">[Orianna] Command: Load</font><font color=\"#6699ff\"><b> Prodiction!</b>")
+	PrintChat("<font color=\"#81BEF7\">[Orianna] Command: Load</font><font color=\"#9B40A5\"><b> IGNITEREADY!</b>")
 end
 function OnSendPacket(p)
 	if Menu.Misc.BlockR and p.header == Packet.headers.S_CAST then
@@ -840,7 +840,7 @@ function OnProcessSpell(unit, spell)
 		BallPos = spell.target
 	end
 	if unit.isMe and spell.name:find("OrianaDetonateCommand") then
-		PrintChat(tostring(GetDistance(spellR.sourcePosition, spell.startPos)))
+		--PrintChat(tostring(GetDistance(spellR.sourcePosition, spell.startPos)))
 	end
 	if unit.type == "AIHeroClient" then
 		LastChampionSpell[unit.networkID] = {name = spell.name, time=os.clock()}
