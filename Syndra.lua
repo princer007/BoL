@@ -1,5 +1,5 @@
 if myHero.charName ~= "Syndra" then return end
-local version = 1.63
+local version = 9000
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Syndra"
 
@@ -202,7 +202,9 @@ function OnLoad()
 	EnemyMinions = minionManager(MINION_ENEMY, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
 	JungleMinions = minionManager(MINION_JUNGLE, QERange, myHero, MINION_SORT_MAXHEALTH_DEC)
 	PosiblePets = minionManager(MINION_OTHER, W.range, myHero, MINION_SORT_MAXHEALTH_DEC)
-	PrintChat("Syndra: Loaded <font color=\"#6699ff\"><b> Use Prediction sensitivity = 1!</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
 end
 function OnRecvPacket(p)
 	if p.header == 113 then
