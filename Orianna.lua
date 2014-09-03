@@ -4,7 +4,7 @@
 ]]
 if myHero.charName ~= "Orianna" then return end
 
-local version = 1.24
+local version = 9000
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Orianna"
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -231,7 +231,14 @@ function OnLoad()
 	else
 		_IGNITE = nil
 	end
-	PrintChat("<font color=\"#81BEF7\">[Orianna] Command: Load</font><font color=\"#9B40A5\"><b> IGNITEREADY!</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
 end
 function OnSendPacket(p)
 	if Menu.Misc.BlockR and p.header == Packet.headers.S_CAST then
