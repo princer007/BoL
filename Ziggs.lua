@@ -1,6 +1,6 @@
 if myHero.charName ~= "Ziggs" then return end
 
-local version = 0.93
+local version = 9000
 local AUTOUPDATE = true
 local SCRIPT_NAME = "Ziggs"
 --[[
@@ -171,7 +171,14 @@ function OnLoad()
 		DLib:AddToMenu(Menu.Drawings, MainCombo)
 	Menu:addSubMenu("Debug", "Debug")
 		Menu.Debug:addParam("DebugQ", "Draw Q prediction", SCRIPT_PARAM_ONOFF, false)
-	PrintChat("<font color=\"#FFFFFF\">Ziggs -</font><font color=\"#6699ff\"><b> The Big Bang Theory!</b> </font><font color=\"#FFFFFF\">: Loaded </font>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
 end
 function OnInterruptSpell(unit, spell)
 	if (GetDistance(unit, myHero) <= (spellData[_W].range+30+spellData[_W].width)) then
