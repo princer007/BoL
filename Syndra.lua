@@ -205,6 +205,8 @@ function OnLoad()
 	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
 	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
 	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
+	PrintChat("<font color=\"#9B40A5\">IMPORTANT! BoL is dead. Honda7 is developing new LoL cheat named LeagueSharp. It works much faster and cause no lags. I'm going there. Cya. Btw i got ban. Spudgy is bitching about his money.</b>")
 end
 function OnRecvPacket(p)
 	if p.header == 113 then
